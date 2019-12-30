@@ -1,0 +1,14 @@
+Name: unpack at cursor
+Description: Make package scope explicit
+Binding: unpack_cursor
+Interactive: false
+
+Name: pack at cursor
+Description: Make package scope implicit (remove "package::")
+Binding: pack_cursor
+Interactive: false
+
+Name: pack at cursor roxygen
+Description: Make package scope implicit (remove "package::") and add roxygen header above current line
+Binding: pack_cursor_roxygen
+Interactive: false
