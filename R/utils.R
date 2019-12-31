@@ -5,20 +5,20 @@ get_obj_env <- function(x, env) {
 }
 
 get_pkg_name <- function(env) {
-
   if(is.null(env)) return(NULL)
-  if(any(sapply(.global_packr_env$skip_envs, identical, env))) {
-    return(NULL)
-  }
 
   en <- env_name(env)
+
   if (grepl("^package:", en))
     return(sub("^package:", "", en))
+
   if (grepl("^namespace:", en))
     return(sub("^namespace:", "", en))
 
-  return(get_pkg_name(env_parent(env)))
+  return(NULL)
+  # return(get_pkg_name(env_parent(env)))
 }
+
 
 make_function_call <- function(args, body) {
   call("function", as.pairlist(args), body)
@@ -58,4 +58,22 @@ unroll_call <- function(x) {
   if(is.call(x)) x <- unroll_call(x[[1]])
 
   x
+}
+
+
+
+is_assignment <- function(x) {
+  deparse(x[[1]]) %in% c("=", "<-", "<<-")
+}
+
+is_ns_access <- function(x) {
+  deparse(x[[1]]) %in% c("::",":::")
+}
+
+is_pipe <- function(x) {
+  deparse(x[[1]]) %in% c('%>%')
+}
+
+is_list_access <- function(x) {
+  deparse(x[[1]]) %in% c("$")
 }

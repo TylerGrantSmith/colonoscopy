@@ -1,142 +1,136 @@
-#' unpack
-#' @export
-unpack <- function(x) {
-  unpack_(x)
+unpack <- function(x, envir = caller_env()) {
+  expr <- enexpr(x)
+  envir <- envir %||% new_environment()
+  unpack_(expr, envir)
 }
 
-#' unpack_
-#' @export
-unpack_ <- function(x, envir, enclos, ...) {
-  UseMethod("unpack_")
-}
-
-#' @export
-unpack_.quosure <- function(x, envir = caller_env(), enclos = environment(x)) {
-  unpack_(quo_squash(x), envir, enclos)
-}
-
-#' @export
-unpack_.function <- function(x, envir = environment(x), enclos = .global_packr_env$exec_env) {
-  if(is.primitive(x)) return(x)
-
-  current_exec_env = .global_packr_env$exec_env
-  on.exit({.global_packr_env$exec_env = current_exec_env})
-
-  .global_packr_env$exec_env = new_environment(as.list(formals(x)), current_exec_env)
-
-  fmls <- unpack_.pairlist(formals(x), envir, .global_packr_env$exec_env)
-  body <- unpack_.call(body(x), envir, .global_packr_env$exec_env)
-
-  make_function_call(fmls, body)
-}
-
-
-#' @export
-unpack_.pairlist <- function(x, envir = current_env(), enclos = environment(x)) {
-  as.pairlist(lapply(x, unpack_, envir, enclos))
-}
-
-#' @export
-#' @rdname unpack_
-unpack_.list <- function(x, envir = current_env(), enclos = environment(x)) {
-  lapply(x, unpack_, envir, enclos)
-}
-
-#' @export
-unpack_.call <- function(x, envir = current_env(), enclos = environment(x)) {
-
-  xu <- unroll_call(x)
-
-  if(as.character(xu) == "function") return(unpack_.function(eval(x, envir, enclos)))
-
-  if(as.character(xu) %in% .global_packr_env$list_access_symbols) return(unpack_list_access(x, envir, enclos))
-  if(as.character(xu) %in% .global_packr_env$ns_access_symbols)   return(unpack_ns_access(x, envir, enclos))
-  if(as.character(xu) %in% .global_packr_env$assignment_symbols)  return(unpack_assignment_access(x, envir, enclos))
-  if(as.character(xu) %in% .global_packr_env$pipe_symbols && getOption("packr.pipe")) return(unpack_pipe(x, envir, enclos))
-  if(as.character(xu) %in% .global_packr_env$dt_symbols && getOption("packr.dt")) return(unpack_assignment_access(x, envir, enclos))
-
-  ds <- lapply(x, unpack_, envir, enclos)
-  cs <- as.call(ds)
-  cs
-}
-
-
-
-#' @export
-unpack_.name <- function(x, envir = current_env(), enclos = new_environment(parent = envir)){
-  if(is.null(x) || x == "") {
-    return(x)
-  }
-
-  if(exists(as.character(x), enclos %||% empty_env())) {
-    xenv <- pryr::where(as.character(x), enclos %||% empty_env())
-  } else if(exists(as.character(x), envir)) {
-    xenv <- pryr::where(as.character(x), envir)
-  } else {
-    return(x)
-  }
-
-    if(identical(xenv, .global_packr_env$exec_env)) {
-      return(x)
-    }
-
-  if(grepl("^imports:", env_name(xenv)))  {
-    xenv <- get_obj_env(x, xenv)
-  }
-
-  pkg <- get_pkg_name(xenv)
-  exported <- is_exported(x, pkg)
-
-  if(is.null(pkg) || isBaseNamespace(xenv)  || identical(xenv, base_env())) return(x)
-  if(exported) make_exported_call(pkg, x) else make_internal_call(pkg, x)
-}
-
-#' @export
-unpack_.default <- function(x, envir = current_env(), enclos = new_environment(parent = caller_env())) {
-
-  if(is.call(x)) {
-    return(unpack_.call(x, envir, enclos))
-  }
-
+unpack_ <- function(x, envir) {
   if(is_syntactic_literal(x)) {
     return(x)
   }
 
-  stop(sprintf("Cannot unpack %s of class %s", deparse(substitute(x)), class(x)[1]))
+  if(is_symbol(x)) {
+    return(unpack_symbol(x, envir))
+  }
+
+  if(is_call(x)) {
+    return(unpack_call(x, envir))
+  }
 }
 
-unpack_ns_access <- function(x, envir, enclos) {
-  if(length(x) == 3) return(x)
+unpack_symbol <- function(x, envir) {
+  xc <- as.character(x)
+  x_env <- tryCatch(pryr::where(xc, envir), error = function(e) NULL)
 
-  return(as.call(c(x[[1]], unpack_(as.list(x[-1]), envir, enclos))))
+
+  if(is_null(x_env)) {
+    return(x)
+  }
+
+  if(grepl("^imports:", env_name(x_env)))  {
+    x_env <- get_obj_env(xc, x_env)
+  }
+
+  pkg_name <- get_pkg_name(x_env)
+
+  if(is_null(pkg_name) || pkg_name == 'base') {
+    return(x)
+  }
+
+  if(xc %in% getNamespaceExports(pkg_name)) {
+    return(make_exported_call(pkg_name, x))
+  } else {
+    return(make_internal_call(pkg_name, x))
+  }
+
+  return(x)
 }
 
-unpack_list_access <- function(x, envir, enclos) {
+unpack_call <- function(x, envir) {
+
+  if(is_null(x)) {
+    return(x)
+  }
+
+  if(is_assignment(x)) {
+    return(unpack_assignment(x, envir))
+  }
+
+  if(is_pipe(x)) {
+    return(unpack_pipe(x, envir))
+  }
+
+  if(is_list_access(x)) {
+    return(unpack_list_access(x, envir))
+  }
+
+  if(is_ns_access(x)) {
+    return(x)
+  }
+
+  if(is_function_def(x)) {
+    enclos = new_environment(parent = envir)
+    fmls <- unpack_pairlist(x[[2]], enclos)
+    body <- unpack_call(x[[3]], enclos)
+    return(make_function_call(fmls, body))
+  }
+
+  return(as.call(lapply(x, unpack_, envir)))
+}
+
+is_function_def <- function(x) {
+  x[[1]] == as.name('function')
+}
+
+unpack_pairlist <- function(pl, envir) {
+  pl_bound <- pl[!sapply(pl, is_missing)]
+
+  do.call(env_bind_lazy, c(.env = envir, pl_bound))
+
+  lapply(pl, unpack_, envir)
+}
+
+unpack_function <- function(f, enclos = NULL) {
+  if(is_primitive(f)) {
+    return(f)
+  }
+
+  enclos <- enclos %||% environment(f)
+
+  envir <- new_environment(parent = enclos)
+
+  fmls <- unpack_pairlist(formals(f), envir)
+  body <- unpack_call(body(f), envir)
+
+  make_function_call(fmls, body)
+}
+
+unpack_list_access <- function(x, envir) {
   ds <- switch(length(x),
-               list(unpack_list_access(x[[1]], envir, enclos)),
-               list(unpack_list_access(x[[1]], envir, enclos), unpack_(x[[2]], envir, enclos)),
-               list(x[[1]], unpack_(x[[2]], envir, enclos), x[[3]])
+               list(unpack_list_access(x[[1]], envir)),
+               list(unpack_list_access(x[[1]], envir), unpack_(x[[2]], envir)),
+               list(x[[1]], unpack_(x[[2]], envir), x[[3]])
   )
   return(as.call(ds))
 }
 
-unpack_assignment_access <- function(x, envir, enclos) {
-  lhs <- x[[2]] # not sure this is right
-  rhs <- x[[3]]
-
-  ds <- as.call(list(x[[1]], lhs, unpack_(rhs, envir, enclos)))
-  env_bind(enclos, !!deparse(lhs) := missing_arg())
-
-  return(ds)
+unpack_pipe <- function(p, envir) {
+  as.call(list(p[[1]],unpack_(p[[2]], envir), unpack_(p[[3]], envir)))
 }
 
-unpack_pipe <- function(x, envir, enclos) {
-  pipe <- x[[1]]
-  lhs  <- x[[2]]
-  rhs  <- x[[3]]
+unpack_assignment <- function(x, envir) {
+  if(is_symbol(x[[2]])) {
+    switch(
+      as.character(x[[1]]),
+      '='= ,
+      '<-' = env_bind(envir, !!deparse(x[[2]]) := x[[3]], .eval_env = envir),
+      '<<-' = env_bind(tryCatch(pryr::where(deparse(x[[2]]), parent.env(envir)),
+                                error = function(e) envir),
+                       !!deparse(x[[2]]) := x[[3]], .eval_env = envir) # not sure this is right
+    )
+  }
 
-  ds <- as.call(list(pipe,
-                     unpack_(lhs, envir, enclos),
-                     unpack_(rhs, envir, enclos)))
-  return(ds)
+  return(as.call(list(x[[1]],
+                      unpack_(x[[2]], envir),
+                      unpack_(x[[3]], envir))))
 }
