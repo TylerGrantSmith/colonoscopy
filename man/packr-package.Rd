@@ -9,7 +9,7 @@
 Utility to rewrite function calls to make them use double colon and triple colon operators
 }
 \author{
-\strong{Maintainer}: Tyler Grant Smith \email{tyler.grant.smith@gmail.com} (YOUR-ORCID-ID)
+\strong{Maintainer}: Tyler Grant Smith \email{tyler.grant.smith@gmail.com} (\href{https://orcid.org/YOUR-ORCID-ID}{ORCID})
 
 }
 \keyword{internal}
