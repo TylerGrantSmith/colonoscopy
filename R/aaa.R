@@ -20,3 +20,4 @@ globalVariables(c(".global_packr_env"), "packr") #ignore this function in R CMD 
                                               cursor_pos   = NULL,
                                               cursor_start = NULL,
                                               cursor_end   = NULL)
+dep_env <- new_environment()

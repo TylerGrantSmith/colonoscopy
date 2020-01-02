@@ -18,9 +18,8 @@ get_pkg_name <- function(env) {
   return(NULL)
 }
 
-
-make_function_call <- function(args, body) {
-  call("function", as.pairlist(args), body)
+is_assignment <- function(x) {
+  deparse(x[[1]]) %in% c("=", "<-", "<<-")
 }
 
 is_exported <- function(x, ns) {
@@ -29,20 +28,12 @@ is_exported <- function(x, ns) {
   as.character(x) %in% getNamespaceExports(ns)
 }
 
-make_exported_call <- function(pkg, name) {
-  call("::", as.name(pkg), as.name(name))
+is_function_def <- function(x) {
+  x[[1]] == as.name('function')
 }
 
-make_internal_call <- function(pkg, name) {
-  call(":::", as.name(pkg), as.name(name))
-}
-
-is.syntactic <- function(x) {
-  make.names(x) == x
-}
-
-is_assignment <- function(x) {
-  deparse(x[[1]]) %in% c("=", "<-", "<<-")
+is_list_access <- function(x) {
+  deparse(x[[1]]) %in% c("$")
 }
 
 is_ns_access <- function(x) {
@@ -53,6 +44,14 @@ is_pipe <- function(x) {
   deparse(x[[1]]) %in% c('%>%')
 }
 
-is_list_access <- function(x) {
-  deparse(x[[1]]) %in% c("$")
+make_function_call <- function(args, body) {
+  call("function", as.pairlist(args), body)
+}
+
+make_exported_call <- function(pkg, name) {
+  call("::", as.name(pkg), as.name(name))
+}
+
+make_internal_call <- function(pkg, name) {
+  call(":::", as.name(pkg), as.name(name))
 }

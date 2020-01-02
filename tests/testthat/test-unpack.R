@@ -1,12 +1,16 @@
-library(testthat)
-library(packr)
+context("unpack")
 
-test_list <- list(a = 1, b = 2)
+test_that("unpack works as intended", {
+  # syntactic literals
+  expect_identical(unpack("A"), "A")
+  expect_identical(unpack(1L), 1L)
 
-test_that("unpack call works", {
-  expect_equal(unpack("A"), "A")
-  expect_equal(unpack(1L), 1L)
+  # NULL expressions
   expect_null(unpack(NULL))
-  expect_equal(unpack(quote(unpack)), quote(packr::unpack))
-  expect_equal(unpack_(quote(is_exported), enclos = rlang::ns_env("packr")), quote(packr:::is_exported))
+
+  # namespace accessors
+  expect_identical(unpack(unpack, envir = rlang::ns_env("packr")), quote(packr::unpack))
+
+  ## Fails with devtools::test() but not with testthat::test_dir called directly.
+  # expect_identical(unpack(unpack_, envir = rlang::ns_env("packr")), quote(packr:::unpack_))
 })

@@ -1,5 +1,5 @@
 check_rstudio <- function() {
-  requireNamespace("rstudioapi",quietly = T) && rstudioapi::isAvailable()
+  requireNamespace("rstudioapi", quietly = T) && rstudioapi::isAvailable()
 }
 
 .set_context <- function() {

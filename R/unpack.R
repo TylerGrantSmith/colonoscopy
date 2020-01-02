@@ -1,8 +1,3 @@
-unpack <- function(x, envir = caller_env()) {
-  expr <- enexpr(x)
-  unpack_(expr, envir)
-}
-
 unpack_ <- function(x, envir) {
   if(is_null(envir)) {
     envir = new_environment()
@@ -19,11 +14,18 @@ unpack_ <- function(x, envir) {
   if(is_call(x)) {
     return(unpack_call(x, envir))
   }
+
+  if(length(x) > 1) {
+    return(lapply(x, unpack_, envir))
+  }
+
+  stop("Cannot unpack ", x, " of class ", class(x))
 }
+
 
 unpack_symbol <- function(x, envir) {
   xc <- as.character(x)
-  x_env <- tryCatch(pryr::where(xc, envir), error = function(e) NULL)
+  x_env <- tryCatch(where(xc, envir), error = function(e) NULL)
 
 
   if(is_null(x_env)) {
@@ -81,30 +83,12 @@ unpack_call <- function(x, envir) {
   return(as.call(lapply(x, unpack_, envir)))
 }
 
-is_function_def <- function(x) {
-  x[[1]] == as.name('function')
-}
-
 unpack_pairlist <- function(pl, envir) {
   pl_bound <- pl[!sapply(pl, is_missing)]
   do.call(env_bind_lazy, c(.env = envir, pl_bound))
   lapply(pl, unpack_, envir)
 }
 
-unpack_function <- function(f, enclos = NULL) {
-  if(is_primitive(f)) {
-    return(f)
-  }
-
-  enclos <- enclos %||% environment(f)
-
-  envir <- new_environment(parent = enclos)
-
-  fmls <- unpack_pairlist(formals(f), envir)
-  body <- unpack_call(body(f), envir)
-
-  make_function_call(fmls, body)
-}
 
 unpack_list_access <- function(x, envir) {
   ds <- switch(length(x),
@@ -125,7 +109,7 @@ unpack_assignment <- function(x, envir) {
       as.character(x[[1]]),
       '='= ,
       '<-' = env_bind(envir, !!deparse(x[[2]]) := x[[3]], .eval_env = envir),
-      '<<-' = env_bind(tryCatch(pryr::where(deparse(x[[2]]), parent.env(envir)),
+      '<<-' = env_bind(tryCatch(where(deparse(x[[2]]), parent.env(envir)),
                                 error = function(e) envir),
                        !!deparse(x[[2]]) := x[[3]], .eval_env = envir) # not sure this is right
     )
@@ -134,4 +118,51 @@ unpack_assignment <- function(x, envir) {
   return(as.call(list(x[[1]],
                       unpack_(x[[2]], envir),
                       unpack_(x[[3]], envir))))
+}
+
+#' Make explicit package dependencies
+#'
+#' \code{unpack} returns an expression with all symbols resolving to loaded namespaces by
+#' explicitly adding the namespace access notation.
+#'
+#' @param x An expression to process.  Input is automatically quoted, use !! to unquote if
+#' you have already captured an expression object.
+#'
+#' @param envir An environment in which the expression should be evaluated.
+#' @export
+#' @examples
+#'
+#' # Unchanged
+#' unpack(1)
+#' unpack("a")
+#'
+#' # Modified
+#' library(packr)
+#' unpack(unpack)
+unpack <- function(x, envir = caller_env()) {
+  expr <- enexpr(x)
+  unpack_(expr, envir)
+}
+
+#' Make explicit package dependencies in a function definition
+#'
+#' @param f A function
+#'
+#' @param enclos The environment in which the function is defined.  Defaults to
+#'   \code{environment(f)}
+#' @export
+#'
+#' @examples
+#' unpack_function(unpack_function)
+unpack_function <- function(f, enclos = environment(f)) {
+  if(is_primitive(f)) {
+    return(f)
+  }
+
+  envir <- new_environment(parent = enclos)
+
+  fmls <- unpack_pairlist(formals(f), envir)
+  body <- unpack_call(body(f), envir)
+
+  make_function_call(fmls, body)
 }

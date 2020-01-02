@@ -6,7 +6,7 @@
 \alias{packr-package}
 \title{packr: packr}
 \description{
-Utility to rewrite function calls to make them use double colon and triple colon operators
+Utility to rewrite function calls to make them use double colon and triple colon operators.
 }
 \author{
 \strong{Maintainer}: Tyler Grant Smith \email{tyler.grant.smith@gmail.com} (\href{https://orcid.org/YOUR-ORCID-ID}{ORCID})

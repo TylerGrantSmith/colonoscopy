@@ -1,26 +1,21 @@
-pack <- function(x, envir = NULL) {
-  expr <- enexpr(x)
-  pack_(expr, envir)
-}
-
 pack_ <- function(x, envir) {
   if(is_null(envir)) {
     envir = new_environment()
-  }
-
-  if(is_call(x)) {
-    return(pack_call(x, envir))
   }
 
   if(is_syntactic_literal(x) || is_symbol(x)) {
     return(x)
   }
 
+  if(is_call(x)) {
+    return(pack_call(x, envir))
+  }
+
   if(length(x) > 1) {
     return(lapply(x, pack_, envir))
   }
 
-  return(NULL)
+  stop("Cannot unpack ", x, " of class ", class(x))
 }
 
 
@@ -57,12 +52,41 @@ pack_pairlist <- function(x, envir) {
   lapply(x, pack_, envir)
 }
 
-pack_function <- function(f, enclos = NULL) {
+
+#' Remove all namespace accessors from an expression
+#'
+#' @param x An expression to process.  Input is automatically quoted, use !! to unquote if
+#' you have already captured an expression object.
+#'
+#' @param envir An environment in which the expression should be evaluated.
+#' @export
+#' @examples
+#' # Unchanged
+#' pack(1)
+#' pack("a")
+#'
+#' # Modified
+#' pack(packr::pack)
+pack <- function(x, envir = NULL) {
+  expr <- enexpr(x)
+  pack_(expr, envir)
+}
+
+#' Remove all namespace accessors from a function definition
+#'
+#' @param f A function
+#'
+#' @param enclos The environment in which the function is defined.  Defaults to
+#'   \code{environment(f)}
+#' @export
+#'
+#' @examples
+#' test_function <- function() { packr::pack }
+#' pack_function(test_function)
+pack_function <- function(f, enclos = environment(f)) {
   if(is_primitive(f)) {
     return(f)
   }
-
-  enclos <- enclos %||% environment(f)
 
   envir <- new_environment(parent = enclos)
 
@@ -70,8 +94,4 @@ pack_function <- function(f, enclos = NULL) {
   body <- pack_call(body(f), envir)
 
   make_function_call(fmls, body)
-}
-
-pack_track <- function(f, envir = NULL, ..pkgs) {
-
 }
