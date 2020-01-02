@@ -16,7 +16,6 @@ get_pkg_name <- function(env) {
     return(sub("^namespace:", "", en))
 
   return(NULL)
-  # return(get_pkg_name(env_parent(env)))
 }
 
 
@@ -41,26 +40,6 @@ make_internal_call <- function(pkg, name) {
 is.syntactic <- function(x) {
   make.names(x) == x
 }
-
-register_dependency <- function(env, pkg, name) {
-  pkg = as.character(pkg)
-  name = as.character(name)
-
-  if (exists(pkg, env)) {
-    env[[pkg]][[name]] = name
-  } else {
-    env[[pkg]] = rlang::new_environment()
-    assign(name, name, env[[pkg]])
-  }
-}
-
-unroll_call <- function(x) {
-  if(is.call(x)) x <- unroll_call(x[[1]])
-
-  x
-}
-
-
 
 is_assignment <- function(x) {
   deparse(x[[1]]) %in% c("=", "<-", "<<-")

@@ -114,10 +114,10 @@ pack_selection <- function(envir = caller_env(), enclos = new_environment(parent
 }
 
 
-unpack_cursor <- function(envir = caller_env(), enclos = new_environment(parent=empty_env())) {
+unpack_cursor <- function(envir = caller_env()) {
   .set_context()
 
-  ut = unpack_token_at_cursor(envir, enclos)
+  ut = unpack_token_at_cursor(envir)
 
   if(is.null(ut)) return()
 
@@ -125,7 +125,7 @@ unpack_cursor <- function(envir = caller_env(), enclos = new_environment(parent=
 }
 
 
-unpack_token_at_cursor <- function(envir = caller_env(), enclos = new_environment(parent=empty_env())) {
+unpack_token_at_cursor <- function(envir = caller_env()) {
   token <- .global_packr_env$context$token  #.rs.guessToken(line, cursorPos)
 
   if(token == "")
@@ -136,36 +136,11 @@ unpack_token_at_cursor <- function(envir = caller_env(), enclos = new_environmen
   if(ns_access)
     return()
 
-  ut = unpack_.name(parse_expr(token), envir, enclos)
+  ut = unpack_symbol(parse_expr(token), envir)
 
   return(ut)
 }
-
-unpack_paste <- function(input, output_context = guess_output_context()) {
-  output = unpack_construct(input, output_context)
-  rstudioapi::insertText(output_context$selection[[1]]$range, output, output_context$id)
-}
-
-unpack_construct <- function(input, output_context) {
-  if(missing(input)) {
-    input <- tryCatch(
-      expr = {
-        rstudioapi::primary_selection(output_context)$text
-      },
-
-      error = function(e) {
-        return(NULL)
-      })
-
-    if(is.null(input) || nchar(input) == 0) {
-      return("")
-    }
-  }
-  up = unpack_(parse_expr(input))
-  return(expr_text(up))
-}
-
-pack_cursor <- function(envir = caller_env(), enclos = new_environment(parent = empty_env())) {
+pack_cursor <- function(envir = caller_env()) {
   pattern_start <- .global_packr_env$pattern_start
   pattern_end   <- .global_packr_env$pattern_end
   on.exit({
@@ -177,13 +152,13 @@ pack_cursor <- function(envir = caller_env(), enclos = new_environment(parent = 
   .global_packr_env$pattern_end         <- "^[a-zA-Z._0-9:]+"
   .set_context()
 
-  ut = pack_token_at_cursor(envir, enclos, FALSE)
+  ut = pack_token_at_cursor(envir,FALSE)
 
   invisible(.replace_in_context(ut))
 }
 
 
-pack_cursor_roxygen <- function(envir = caller_env(), enclos = new_environment(parent=empty_env())) {
+pack_cursor_roxygen <- function(envir = caller_env()) {
   pattern_start <- .global_packr_env$pattern_start
   pattern_end   <- .global_packr_env$pattern_end
   on.exit({
@@ -194,49 +169,29 @@ pack_cursor_roxygen <- function(envir = caller_env(), enclos = new_environment(p
   .global_packr_env$pattern_start       <- "[a-zA-Z._0-9:]+$"
   .global_packr_env$pattern_end         <- "^[a-zA-Z._0-9:]+"
   .set_context()
-  ut = pack_token_at_cursor(envir, enclos, TRUE)
+  ut = pack_token_at_cursor(envir, TRUE)
   invisible(.replace_in_context(ut))
 }
 
-pack_token_at_cursor <- function(envir = caller_env(), enclos = new_environment(parent=empty_env()), roxygen = FALSE) {
+pack_token_at_cursor <- function(envir = caller_env(), roxygen = FALSE) {
   token <- .global_packr_env$context$token  #.rs.guessToken(line, cursorPos)
 
   if(token == "")
     return()
 
-  up = pack_format(rlang::parse_expr(token), roxygen, envir, enclos)
+  up = pack_format(rlang::parse_expr(token), roxygen, envir)
 
   return(up)
 }
 
-pack_construct <- function(input, oc = guess_output_context(), roxygen) {
-  print(oc)
-  if(missing(input)) {
-    input <- tryCatch({rstudioapi::primary_selection(oc)$text},
-                      error = function(e) {
-                        return(NULL)
-                      })
-    if(is.null(input)) {
-      stop("do something")
-    }
-
-  }
-  if(input != "") {
-    input = parse_expr(input)
-  }
-
-  up = pack_format(input, roxygen)
-
-  return(up)
-}
-
-pack_format <- function(text, roxygen, envir, enclos) {
+pack_format <- function(text, roxygen, envir) {
   if(roxygen) {
-    out = pack_track(text)
-    headers <- create_header(out$pkgs)
-    text = paste0(headers, expr_text(out$res))
+    stop("Functionality not yet implemented")
+    # out = pack_track(text)
+    # headers <- create_header(out$pkgs)
+    # text = paste0(headers, expr_text(out$res))
   } else {
-    out = pack_(text,envir, enclos)
+    out = pack_(text,envir)
     text = expr_text(out)
   }
 
@@ -255,7 +210,6 @@ pack_selection_roxygen <- function() {
   rstudioapi::insertText(location = selection$range,
                          text = text)
 }
-
 
 create_header <- function(pkgs) {
   importfrom = "#' @importFrom"

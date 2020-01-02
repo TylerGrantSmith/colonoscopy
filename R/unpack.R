@@ -1,10 +1,13 @@
 unpack <- function(x, envir = caller_env()) {
   expr <- enexpr(x)
-  envir <- envir %||% new_environment()
   unpack_(expr, envir)
 }
 
 unpack_ <- function(x, envir) {
+  if(is_null(envir)) {
+    envir = new_environment()
+  }
+
   if(is_syntactic_literal(x)) {
     return(x)
   }
@@ -84,9 +87,7 @@ is_function_def <- function(x) {
 
 unpack_pairlist <- function(pl, envir) {
   pl_bound <- pl[!sapply(pl, is_missing)]
-
   do.call(env_bind_lazy, c(.env = envir, pl_bound))
-
   lapply(pl, unpack_, envir)
 }
 
