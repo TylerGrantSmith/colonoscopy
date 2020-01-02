@@ -1,0 +1,44 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# packr
+
+<!-- badges: start -->
+[![Travis build status](https://travis-ci.org/TylerGrantSmith/packr.svg?branch=master)](https://travis-ci.org/TylerGrantSmith/packr)
+[![Codecov test coverage](https://codecov.io/gh/TylerGrantSmith/packr/branch/master/graph/badge.svg)](https://codecov.io/gh/TylerGrantSmith/packr?branch=master)
+<!-- badges: end -->
+
+The goal of packr is to ...
+
+## Installation
+
+``` r
+# install.packages("devtools")
+devtools::install_github("TylerGrantSmith/packr")
+```
+## Example
+
+`unpack` will modify expressions by appending explicit package references.
+```{r unpack_example}
+library(packr)
+unpack(unpack)
+```
+`unpack_function` will make explicit functions imported from other packages and non-exported functions from the package itself.
+
+```{r unpack_function_example}
+library(packr)
+unpack
+unpack_function(unpack)
+```

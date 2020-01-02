@@ -8,6 +8,14 @@
 \description{
 Utility to rewrite function calls to make them use double colon and triple colon operators.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/TylerGrantSmith/packr}
+  \item Report bugs at \url{https://github.com/TylerGrantSmith/packr/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Tyler Grant Smith \email{tyler.grant.smith@gmail.com} (\href{https://orcid.org/YOUR-ORCID-ID}{ORCID})
 
