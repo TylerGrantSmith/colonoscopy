@@ -8,7 +8,6 @@ Authors@R:
            email = "tyler.grant.smith@gmail.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Description: Utility to rewrite function calls to make them use double colon and triple colon operators.
-License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: 
