@@ -14,6 +14,7 @@ check_rstudio <- function() {
          console = .set_console_context())
 }
 
+
 .set_rstudio_context <- function(with_selection = FALSE) {
   context   = rstudioapi::getActiveDocumentContext()
   selection = rstudioapi::primary_selection(context)
@@ -101,17 +102,6 @@ check_rstudio <- function() {
   rstudioapi::insertText(replace_range, text, id)
 }
 
-pack_selection <- function(envir = caller_env(), enclos = new_environment(parent = empty_env())) {
-  .set_context()
-
-  parsed_text = parse(text = .global_packr_env$context$buffer)
-  ut = pack(parsed_text)
-
-  if(is.null(ut)) return()
-
-  invisible(.replace_in_context(ut))
-
-}
 
 
 unpack_cursor <- function(envir = caller_env()) {
@@ -124,6 +114,17 @@ unpack_cursor <- function(envir = caller_env()) {
   invisible(.replace_in_context(deparse(ut)))
 }
 
+unpack_selection <- function(envir = caller_env()) {
+  .set_context()
+
+  parsed_text = parse(text = .global_packr_env$context$buffer)
+  ut = pack(parsed_text)
+
+  if(is.null(ut)) return()
+
+  invisible(.replace_in_context(ut))
+
+}
 
 unpack_token_at_cursor <- function(envir = caller_env()) {
   token <- .global_packr_env$context$token  #.rs.guessToken(line, cursorPos)
@@ -158,20 +159,32 @@ pack_cursor <- function(envir = caller_env()) {
 }
 
 
-pack_cursor_roxygen <- function(envir = caller_env()) {
-  pattern_start <- .global_packr_env$pattern_start
-  pattern_end   <- .global_packr_env$pattern_end
-  on.exit({
-    .global_packr_env$pattern_start       <- pattern_start
-    .global_packr_env$pattern_end         <- pattern_end
-  })
-
-  .global_packr_env$pattern_start       <- "[a-zA-Z._0-9:]+$"
-  .global_packr_env$pattern_end         <- "^[a-zA-Z._0-9:]+"
+pack_selection <- function(envir = caller_env(), enclos = new_environment(parent = empty_env())) {
   .set_context()
-  ut = pack_token_at_cursor(envir, TRUE)
+
+  parsed_text = parse(text = .global_packr_env$context$buffer)
+  ut = pack(parsed_text)
+
+  if(is.null(ut)) return()
+
   invisible(.replace_in_context(ut))
+
 }
+
+# pack_cursor_roxygen <- function(envir = caller_env()) {
+#   pattern_start <- .global_packr_env$pattern_start
+#   pattern_end   <- .global_packr_env$pattern_end
+#   on.exit({
+#     .global_packr_env$pattern_start       <- pattern_start
+#     .global_packr_env$pattern_end         <- pattern_end
+#   })
+#
+#   .global_packr_env$pattern_start       <- "[a-zA-Z._0-9:]+$"
+#   .global_packr_env$pattern_end         <- "^[a-zA-Z._0-9:]+"
+#   .set_context()
+#   ut = pack_token_at_cursor(envir, TRUE)
+#   invisible(.replace_in_context(ut))
+# }
 
 pack_token_at_cursor <- function(envir = caller_env(), roxygen = FALSE) {
   token <- .global_packr_env$context$token  #.rs.guessToken(line, cursorPos)
@@ -198,18 +211,18 @@ pack_format <- function(text, roxygen, envir) {
   return(text)
 }
 
-pack_selection_roxygen <- function() {
-
-  context = rstudioapi::getSourceEditorContext()
-  selection = rstudioapi::primary_selection(context)
-  selection_text = selection$text
-  up <- pack(parse_expr(selection_text))
-  headers <- create_header(up$pkgs)
-  text = paste0(headers, rlang::expr_text(up$res))
-
-  rstudioapi::insertText(location = selection$range,
-                         text = text)
-}
+# pack_selection_roxygen <- function() {
+#
+#   context = rstudioapi::getSourceEditorContext()
+#   selection = rstudioapi::primary_selection(context)
+#   selection_text = selection$text
+#   up <- pack(parse_expr(selection_text))
+#   headers <- create_header(up$pkgs)
+#   text = paste0(headers, rlang::expr_text(up$res))
+#
+#   rstudioapi::insertText(location = selection$range,
+#                          text = text)
+# }
 
 create_header <- function(pkgs) {
   importfrom = "#' @importFrom"

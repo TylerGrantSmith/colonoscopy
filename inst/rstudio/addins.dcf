@@ -1,14 +1,19 @@
 Name: unpack at cursor
-Description: Make package scope explicit
+Description: Add package namespace access `::`
 Binding: unpack_cursor
 Interactive: false
 
+Name: unpack selection
+Description: Add package namespace access `::` for the selection
+Binding: unpack_selection
+Interactive: false
+
 Name: pack at cursor
-Description: Make package scope implicit (remove "package::")
+Description: Remove package namespace access `::`
 Binding: pack_cursor
 Interactive: false
 
-Name: pack at cursor roxygen
-Description: Make package scope implicit (remove "package::") and add roxygen header above current line
-Binding: pack_cursor_roxygen
+Name: pack selection
+Description: Remove package namespace access `::` for the selection
+Binding: pack_selection
 Interactive: false
