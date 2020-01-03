@@ -20,3 +20,4 @@ Suggests:
     covr
 URL: https://github.com/TylerGrantSmith/packr
 BugReports: https://github.com/TylerGrantSmith/packr/issues
+License: GPL-3
