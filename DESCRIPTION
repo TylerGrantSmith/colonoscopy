@@ -12,7 +12,9 @@ Encoding: UTF-8
 LazyData: true
 Imports: 
     rlang (>= 0.3.1),
-    pryr
+    pryr,
+    purrr,
+    data.table
 RoxygenNote: 7.0.2
 Suggests: 
     testthat (>= 2.1.0),

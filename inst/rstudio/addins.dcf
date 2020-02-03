@@ -1,8 +1,3 @@
-Name: unpack at cursor
-Description: Add package namespace access `::`
-Binding: unpack_cursor
-Interactive: false
-
 Name: unpack selection
 Description: Add package namespace access `::` for the selection
 Binding: unpack_selection

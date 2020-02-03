@@ -1,234 +1,215 @@
+ContextTracker <- R6::R6Class(
+  "ContextTracker",
+
+  public = list(
+
+  ),
+
+  private = list(
+    patterns = c(start = "[a-zA-Z._0-9]+$",
+                 end   = "^[a-zA-Z._0-9]+"),
+    frozen_context = NULL
+  ),
+
+  active = list(
+    context = function() { rstudioapi::getActiveDocumentContext() },
+    buffer = function() {
+      purrr::map(self$context$selection, purrr::pluck, 'text')
+    },
+    ranges = function() {
+      purrr::map(self$context$selection, purrr::pluck, 'range')
+    }
+  ),
+  cloneable = FALSE
+)
+
 check_rstudio <- function() {
   requireNamespace("rstudioapi", quietly = T) && rstudioapi::isAvailable()
 }
 
-.set_context <- function() {
-  if(check_rstudio()) {
-    type <- "rstudio"
-  } else {
-    type <- "console"
+set_selections <- function() {
+  context <- context_tracker$context
+  selections <- context$selection
+
+  # expand empty selections to token at cursor
+  for (i in 1:length(selections)) {
+    if (!is_empty_selection(selections[[i]])) {
+      next
+    }
+
+    selections[[i]]$range$start[[2]] <- get_token_start(context,selections[[i]])
+    selections[[i]]$range$end[[2]]   <- get_token_end(context, selections[[i]])
   }
 
-  switch(type,
-         rstudio = .set_rstudio_context(),
-         console = .set_console_context())
+  rstudioapi::setSelectionRanges(purrr::map(selections, purrr::pluck, 'range'), context$id)
 }
 
-
-.set_rstudio_context <- function(with_selection = FALSE) {
-  context   = rstudioapi::getActiveDocumentContext()
-  selection = rstudioapi::primary_selection(context)
-  row       = selection$range$end[[1]]
-
-  if(with_selection) {
-    .set_context_in_env(type     = "rstudio",
-                        id       = context$id,
-                        row      = row,
-                        buffer   = selection$text,
-                        cursor_pos = selection$range$end[[2]])
-  } else {
-    .set_context_in_env(type       = "rstudio",
-                        id         = context$id,
-                        row        = row,
-                        buffer     = context$contents[[row]],
-                        cursor_pos = selection$range$end[[2]])
-  }
+is_empty_selection <- function(selection) {
+  identical(selection$range$start, selection$range$end)
 }
 
-.set_console_context <- function() {
-  stop("Not implemented yet outside of RStudio.")
+is_selection <- function(context = .global_packr_env$context) {
+  !all(sapply(context$selection, is_empty_range))
 }
 
-.set_context_in_env <- function(type = NULL, id = NULL, row = NULL, buffer = "", cursor_pos = 1L) {
-  .global_packr_env$context$type = type
-  .global_packr_env$context$id = id
-  .global_packr_env$context$row = row
-  .global_packr_env$context$buffer = buffer
-  .global_packr_env$context$cursor_pos = cursor_pos
+get_token_start <- function(context, selection) {
+  row <- selection$range$start[[1]]
+  col <- selection$range$start[[2]]
+  buffer <- context$contents[[row]]
 
-  .set_token_start()
-  .set_token_end()
-  .set_token()
-}
+  line_head <- substr(buffer, 1L, col - 1L)
 
-
-.set_token_start <- function() {
-  line_head = substr(.global_packr_env$context$buffer,
-                     1L,
-                     .global_packr_env$context$cursor_pos-1)
-
-  start = regexec(.global_packr_env$pattern_start, line_head)[[1]]
+  start <- regexec(.global_packr_env$pattern_start, line_head)[[1]]
 
   if(start == -1) {
-    start = .global_packr_env$context$cursor_pos
+    start <- col
   }
 
-  .global_packr_env$context$cursor_start = start
+  start
 }
 
-.set_token_end <- function() {
+get_token_end <- function(context, selection) {
+  row <- selection$range$start[[1]]
+  col <- selection$range$start[[2]]
+  buffer <- context$contents[[row]]
 
-  line_tail = substr(.global_packr_env$context$buffer,
-                     .global_packr_env$context$cursor_pos,
-                     nchar(.global_packr_env$context$buffer))
+  line_tail = substr(buffer, col, nchar(buffer))
 
   offset = attr(regexec(.global_packr_env$pattern_end, line_tail)[[1]], "match.length")
+
   if(offset == -1) {
     offset = 0
   }
 
-  .global_packr_env$context$cursor_end = .global_packr_env$context$cursor_pos + offset - 1
+  col + offset
 }
 
-.set_token <- function() {
-  .global_packr_env$context$token = substring(.global_packr_env$context$buffer,
-                                              .global_packr_env$context$cursor_start,
-                                              .global_packr_env$context$cursor_end)
+extract_padding <- function(buffer) {
+  buffer %>%
+    purrr::map(stringr::str_split, "\n", simplify = T) %>%
+    purrr::map(purrr::keep, nzchar) %>%
+    purrr::map(stringr::str_extract, "^(\\s)+") %>%
+    purrr::map(purrr::modify_if, is.na, ~"")
 }
 
+replace_in_context <- function(.text) {
+  if(is.null(.text)) return()
 
-.replace_in_context <- function(text) {
-  if(is.null(text)) return()
+  ranges <- context_tracker$ranges
+  buffer <- context_tracker$buffer #%>% map(trimws)
+  padding <- extract_padding(buffer)
+  id <- context_tracker$context$id
 
-  row   = .global_packr_env$context$row
-  start = .global_packr_env$context$cursor_start
-  end   = .global_packr_env$context$cursor_end
-  id    = .global_packr_env$context$id
+  text <- .text %>%
+    purrr::map_depth(2, deparse) %>%
+    purrr::map(unlist) %>%
+    purrr::map(unmask_comments) %>%
+    purrr::map(trimws)
 
-  replace_range = rstudioapi::as.document_range(
-    c(rstudioapi::as.document_position(c(row, start)),
-      rstudioapi::as.document_position(c(row, end + 1))))
+  text <- purrr::map2(padding, text, stringr::str_c, collapse = "\n")
 
-  rstudioapi::insertText(replace_range, text, id)
+  map2(ranges,
+       text,
+       rstudioapi::insertText,
+       id = id)
 }
 
-
-
-unpack_cursor <- function(envir = caller_env()) {
-  .set_context()
-
-  ut = unpack_token_at_cursor(envir)
-
-  if(is.null(ut)) return()
-
-  invisible(.replace_in_context(deparse(ut)))
+parse_selection <- function() {
+  check_rstudio()
+  set_selections()
+  buffer <- context_tracker$buffer
+  buffer %>% purrr::map(mask_selection) %>% purrr::map(parse_exprs)
 }
 
 unpack_selection <- function(envir = caller_env()) {
-  .set_context()
+  parsed_text <- parse_selection()
 
-  parsed_text = parse(text = .global_packr_env$context$buffer)
-  ut = pack(parsed_text)
+  # outside
+  ut <- unpack(!!parsed_text, envir)
 
   if(is.null(ut)) return()
 
-  invisible(.replace_in_context(ut))
-
+  invisible(replace_in_context(ut))
 }
 
-unpack_token_at_cursor <- function(envir = caller_env()) {
-  token <- .global_packr_env$context$token  #.rs.guessToken(line, cursorPos)
+comment_start <- ".comment_start"
+comment_end   <- ".comment_end"
+blank_line <- sprintf('invisible(.blank_line)')
+inline_comment <- sprintf('invisible("%s%s")',
+                          comment_start,
+                          comment_end)
 
-  if(token == "")
-    return()
+# text = "
+#     cat <-   parse( text ) #comment
+#
+# # test
+# "
+#
+# parse(text="cat <- parse(text = invisible('%beginspace% 43') %endspace% comment) %beginspace% 43 %inlinecomment% '#test'")
 
-  ns_access = grepl(":", token)
+mask_selection <- function(text) {
+  pd <- data.table::as.data.table(utils::getParseData(parse(text = text)))
 
-  if(ns_access)
-    return()
+  pd <- data.table::as.data.table(pd)
+  pd <- pd[terminal == TRUE]
+  pd[, line_start := row.names(.SD) == 1L, line1]
+  pd[line_start == TRUE, indent := (col1 - 1)][is.na(indent), indent := 0]
 
-  ut = unpack_symbol(parse_expr(token), envir)
+  pd[, space := col1 - lag(col2) - 1, line1][is.na(space), space := 0]
+  pd[, blank_lines := lead(line1) - line2][is.na(blank_lines), blank_lines := 0]
+  pd[, comment := token == "COMMENT"]
+  pd[, inline_comment := comment & !line_start]
+  pd[, deco_text := text]
 
-  return(ut)
+  pd[, deco_text := purrr::map2(deco_text, indent,      ~paste0(strrep(' ', .y), .x))]
+  pd[, deco_text := purrr::map2(deco_text, space,       ~paste0(strrep(' ', .y), .x))]
+  pd[comment == TRUE, deco_text := purrr::map2(text, inline_comment, mask_comment)]
+  pd[, deco_text := purrr::map2(deco_text, blank_lines, ~paste0(.x, strrep('\n', .y)))]
+
+  deco_text <- paste0(pd$deco_text, collapse = "")
 }
-pack_cursor <- function(envir = caller_env()) {
-  pattern_start <- .global_packr_env$pattern_start
-  pattern_end   <- .global_packr_env$pattern_end
-  on.exit({
-    .global_packr_env$pattern_start       <- pattern_start
-    .global_packr_env$pattern_end         <- pattern_end
-  })
 
-  .global_packr_env$pattern_start       <- "[a-zA-Z._0-9:]+$"
-  .global_packr_env$pattern_end         <- "^[a-zA-Z._0-9:]+"
-  .set_context()
-
-  ut = pack_token_at_cursor(envir,FALSE)
-
-  invisible(.replace_in_context(ut))
+quote_comment <- function(text) {
+  paste0("\"", text, "\"")
 }
 
+
+inline_comment <- "%%inline_comment%%"
+comment_start <- ".comment_start"
+comment_end <- ".comment_end'"
+
+inline_comment_pattern <- paste0(inline_comment, "\"([^\"]*)\"")
+block_comment_pattern <- sprintf('invisible\\(\\"\\%s([^"]*)\\%s\\"\\)', comment_start, comment_end)
+
+mask_comment <- function(text, inline) {
+  text <- quote_comment(text)
+  if (inline) {
+    text <- paste0(inline_comment, text)
+  } else {
+    text <- paste0("invisible(",comment_start, text, comment_end, ")")
+  }
+
+  text
+}
+
+unmask_comments <- function(text) {
+  text <- gsub(inline_comment_pattern, " \\1", text)
+  text <- gsub(block_comment_pattern, "\\1", text)
+  text
+}
+
+mask_spaces <- function(text, spaces) {
+  # text <- paste0(space_marker,)
+}
 
 pack_selection <- function(envir = caller_env(), enclos = new_environment(parent = empty_env())) {
-  .set_context()
 
-  parsed_text = parse(text = .global_packr_env$context$buffer)
-  ut = pack(parsed_text)
+  parsed_text <- parse_selection()
+  ut = pack(!!parsed_text)
 
   if(is.null(ut)) return()
 
-  invisible(.replace_in_context(ut))
+  invisible(replace_in_context(ut))
 
 }
 
-# pack_cursor_roxygen <- function(envir = caller_env()) {
-#   pattern_start <- .global_packr_env$pattern_start
-#   pattern_end   <- .global_packr_env$pattern_end
-#   on.exit({
-#     .global_packr_env$pattern_start       <- pattern_start
-#     .global_packr_env$pattern_end         <- pattern_end
-#   })
-#
-#   .global_packr_env$pattern_start       <- "[a-zA-Z._0-9:]+$"
-#   .global_packr_env$pattern_end         <- "^[a-zA-Z._0-9:]+"
-#   .set_context()
-#   ut = pack_token_at_cursor(envir, TRUE)
-#   invisible(.replace_in_context(ut))
-# }
-
-pack_token_at_cursor <- function(envir = caller_env(), roxygen = FALSE) {
-  token <- .global_packr_env$context$token  #.rs.guessToken(line, cursorPos)
-
-  if(token == "")
-    return()
-
-  up = pack_format(rlang::parse_expr(token), roxygen, envir)
-
-  return(up)
-}
-
-pack_format <- function(text, roxygen, envir) {
-  if(roxygen) {
-    stop("Functionality not yet implemented")
-    # out = pack_track(text)
-    # headers <- create_header(out$pkgs)
-    # text = paste0(headers, expr_text(out$res))
-  } else {
-    out = pack_(text,envir)
-    text = expr_text(out)
-  }
-
-  return(text)
-}
-
-# pack_selection_roxygen <- function() {
-#
-#   context = rstudioapi::getSourceEditorContext()
-#   selection = rstudioapi::primary_selection(context)
-#   selection_text = selection$text
-#   up <- pack(parse_expr(selection_text))
-#   headers <- create_header(up$pkgs)
-#   text = paste0(headers, rlang::expr_text(up$res))
-#
-#   rstudioapi::insertText(location = selection$range,
-#                          text = text)
-# }
-
-create_header <- function(pkgs) {
-  importfrom = "#' @importFrom"
-  header = ''
-  for(pkg in names(pkgs)) {
-    header = paste(header, importfrom, pkg, paste0(pkgs[[pkg]], collapse = ", "),'\n')
-  }
-  header
-}

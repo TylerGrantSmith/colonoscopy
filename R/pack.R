@@ -11,8 +11,8 @@ pack_ <- function(x, envir) {
     return(pack_call(x, envir))
   }
 
-  if(length(x) > 1) {
-    return(lapply(x, pack_, envir))
+  if (is_list(x)) {
+    return(purrr::map(x, pack_, envir))
   }
 
   stop("Cannot unpack ", x, " of class ", class(x))

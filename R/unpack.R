@@ -1,13 +1,13 @@
 unpack_ <- function(x, envir) {
-  if(is_null(envir)) {
+  if (is_null(envir)) {
     envir = new_environment()
   }
 
-  if(is_syntactic_literal(x)) {
+  if (is_syntactic_literal(x)) {
     return(x)
   }
 
-  if(is_symbol(x)) {
+  if (is_symbol(x)) {
     return(unpack_symbol(x, envir))
   }
 
@@ -15,8 +15,8 @@ unpack_ <- function(x, envir) {
     return(unpack_call(x, envir))
   }
 
-  if(length(x) > 1) {
-    return(lapply(x, unpack_, envir))
+  if (is_list(x)) {
+    return(purrr::map(x, unpack_, envir))
   }
 
   stop("Cannot unpack ", x, " of class ", class(x))
@@ -53,30 +53,30 @@ unpack_symbol <- function(x, envir) {
 
 unpack_call <- function(x, envir) {
 
-  if(is_null(x)) {
+  if (is_null(x)) {
     return(x)
   }
 
-  if(is_assignment(x)) {
+  if (is_assignment(x)) {
     return(unpack_assignment(x, envir))
   }
 
-  if(is_pipe(x)) {
+  if (is_pipe(x)) {
     return(unpack_pipe(x, envir))
   }
 
-  if(is_list_access(x)) {
+  if (is_list_access(x)) {
     return(unpack_list_access(x, envir))
   }
 
-  if(is_ns_access(x)) {
+  if (is_ns_access(x)) {
     return(x)
   }
 
-  if(is_function_def(x)) {
+  if (is_function_def(x)) {
     enclos = new_environment(parent = envir)
     fmls <- unpack_pairlist(x[[2]], enclos)
-    body <- unpack_call(x[[3]], enclos)
+    body <- unpack_(x[[3]], enclos)
     return(make_function_call(fmls, body))
   }
 
@@ -86,6 +86,7 @@ unpack_call <- function(x, envir) {
 unpack_pairlist <- function(pl, envir) {
   pl_bound <- pl[!sapply(pl, is_missing)]
   do.call(env_bind_lazy, c(.env = envir, pl_bound))
+
   lapply(pl, unpack_, envir)
 }
 
