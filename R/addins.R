@@ -155,8 +155,8 @@ mask_selection <- function(text) {
   pd[, line_start := row.names(.SD) == 1L, line1]
   pd[line_start == TRUE, indent := (col1 - 1)][is.na(indent), indent := 0]
 
-  pd[, space := col1 - lag(col2) - 1, line1][is.na(space), space := 0]
-  pd[, blank_lines := lead(line1) - line2][is.na(blank_lines), blank_lines := 0]
+  pd[, space := col1 - data.table::shift(col2, 1, type = "lag") - 1, line1][is.na(space), space := 0]
+  pd[, blank_lines := data.table::shift(line1, 1, type = "") - line2][is.na(blank_lines), blank_lines := 0]
   pd[, comment := token == "COMMENT"]
   pd[, inline_comment := comment & !line_start]
   pd[, deco_text := text]
