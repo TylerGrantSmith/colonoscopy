@@ -18,9 +18,10 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 [![Travis build status](https://travis-ci.org/TylerGrantSmith/packr.svg?branch=master)](https://travis-ci.org/TylerGrantSmith/packr)
 [![Codecov test coverage](https://codecov.io/gh/TylerGrantSmith/packr/branch/master/graph/badge.svg)](https://codecov.io/gh/TylerGrantSmith/packr?branch=master)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
 <!-- badges: end -->
 
-The goal of packr is to ...
+`packr` provides functions and RStudio addins to easily add or remove explicit package scoping (`::`, `:::`)
 
 ## Installation
 

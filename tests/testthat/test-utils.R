@@ -15,10 +15,6 @@ test_that("is_assignment", {
 })
 
 
-test_that("is_exported", {
-  expect_true(is_exported())
-})
-
 test_that("get_pkg_name", {
 
   expect_null(get_pkg_name(NULL))
@@ -26,14 +22,14 @@ test_that("get_pkg_name", {
 
   test_env <- new.env()
 
-  environmentName(test_env) <- "package:test"
+  attr(test_env, 'name') <- "package:test"
   expect_identical(get_pkg_name(test_env), "test")
 
-  environmentName(test_env) <- "namespace:test"
+  attr(test_env, 'name') <- "namespace:test"
   expect_identical(get_pkg_name(test_env), "test")
 })
 
 test_that("is_exported", {
-  expect_true(is_exported("pack"), getNamespace("packr"))
-  expect_false(is_exported("is_exported"), getNamespace("packr"))
+  expect_true (is_exported ("pack",       getNamespace("packr")))
+  expect_false(is_exported("is_exported", getNamespace("packr")))
 })

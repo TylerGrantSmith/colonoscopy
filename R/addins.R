@@ -48,10 +48,6 @@ is_empty_selection <- function(selection) {
   identical(selection$range$start, selection$range$end)
 }
 
-is_selection <- function(context = .global_packr_env$context) {
-  !all(sapply(context$selection, is_empty_range))
-}
-
 get_token_start <- function(context, selection) {
   row <- selection$range$start[[1]]
   col <- selection$range$start[[2]]
@@ -108,7 +104,7 @@ replace_in_context <- function(.text) {
 
   text <- purrr::map2(padding, text, stringr::str_c, collapse = "\n")
 
-  map2(ranges,
+  purrr::map2(ranges,
        text,
        rstudioapi::insertText,
        id = id)
@@ -148,6 +144,9 @@ inline_comment <- sprintf('invisible("%s%s")',
 # parse(text="cat <- parse(text = invisible('%beginspace% 43') %endspace% comment) %beginspace% 43 %inlinecomment% '#test'")
 
 mask_selection <- function(text) {
+  terminal <- line_start <- line1 <- line2 <- col1 <- col2 <-
+    indent <- space <- blank_lines <- token <- NULL
+
   pd <- data.table::as.data.table(utils::getParseData(parse(text = text)))
 
   pd <- data.table::as.data.table(pd)
@@ -156,7 +155,7 @@ mask_selection <- function(text) {
   pd[line_start == TRUE, indent := (col1 - 1)][is.na(indent), indent := 0]
 
   pd[, space := col1 - data.table::shift(col2, 1, type = "lag") - 1, line1][is.na(space), space := 0]
-  pd[, blank_lines := data.table::shift(line1, 1, type = "") - line2][is.na(blank_lines), blank_lines := 0]
+  pd[, blank_lines := data.table::shift(line1, 1, type = "lead") - line2][is.na(blank_lines), blank_lines := 0]
   pd[, comment := token == "COMMENT"]
   pd[, inline_comment := comment & !line_start]
   pd[, deco_text := text]

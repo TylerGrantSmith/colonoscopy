@@ -9,9 +9,12 @@
 status](https://travis-ci.org/TylerGrantSmith/packr.svg?branch=master)](https://travis-ci.org/TylerGrantSmith/packr)
 [![Codecov test
 coverage](https://codecov.io/gh/TylerGrantSmith/packr/branch/master/graph/badge.svg)](https://codecov.io/gh/TylerGrantSmith/packr?branch=master)
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
 <!-- badges: end -->
 
-The goal of packr is to …
+`packr` provides functions and RStudio addins to easily add or remove
+explicit package scoping (`::`, `:::`)
 
 ## Installation
 
@@ -44,7 +47,7 @@ unpack
 #>   expr <- enexpr(x)
 #>   unpack_(expr, envir)
 #> }
-#> <bytecode: 0x0000000013e9fc10>
+#> <bytecode: 0x0000000012c79668>
 #> <environment: namespace:packr>
 unpack_function(unpack)
 #> function(x, envir = rlang::caller_env()) {
