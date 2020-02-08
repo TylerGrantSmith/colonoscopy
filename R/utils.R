@@ -55,3 +55,12 @@ make_exported_call <- function(pkg, name) {
 make_internal_call <- function(pkg, name) {
   call(":::", as.name(pkg), as.name(name))
 }
+
+getNamespaceExportsAndLazyData <- function(ns) {
+  ns <- asNamespace(ns)
+  if (isBaseNamespace(ns))
+    names(.BaseNamespaceEnv)
+  else
+    c(names(.getNamespaceInfo(ns, "exports")),
+      names(.getNamespaceInfo(ns, "lazydata")))
+}
