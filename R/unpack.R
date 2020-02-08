@@ -42,7 +42,7 @@ unpack_symbol <- function(x, envir) {
     return(x)
   }
 
-  if(xc %in% getNamespaceExports(pkg_name)) {
+  if(xc %in% getNamespaceExportsAndLazyData(pkg_name)) {
     return(make_exported_call(pkg_name, x))
   } else {
     return(make_internal_call(pkg_name, x))
