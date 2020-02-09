@@ -102,8 +102,8 @@ replace_in_context <- function(.text) {
     purrr::map(unmask_comments) %>%
     purrr::map(trimws)
 
-  text <- purrr::map2(padding, text, stringr::str_c, collapse = "\n")
-
+  # text <- purrr::map2(padding, text, stringr::str_c, collapse = "\n")
+  text <- purrr::map(text, paste0, collapse = "\n")
   purrr::map2(ranges,
        text,
        rstudioapi::insertText,
@@ -162,7 +162,7 @@ mask_selection <- function(text) {
 
   pd[, deco_text := purrr::map2(deco_text, indent,      ~paste0(strrep(' ', .y), .x))]
   pd[, deco_text := purrr::map2(deco_text, space,       ~paste0(strrep(' ', .y), .x))]
-  pd[comment == TRUE, deco_text := purrr::map2(text, inline_comment, mask_comment)]
+  # pd[comment == TRUE, deco_text := purrr::map2(text, inline_comment, mask_comment)]
   pd[, deco_text := purrr::map2(deco_text, blank_lines, ~paste0(.x, strrep('\n', .y)))]
 
   deco_text <- paste0(pd$deco_text, collapse = "")
@@ -172,20 +172,19 @@ quote_comment <- function(text) {
   paste0("\"", text, "\"")
 }
 
-
-inline_comment <- "%%inline_comment%%"
-comment_start <- ".comment_start"
+inline_comment_token <- ".__inline_comment__."
+comment_token <- ".__comment___."
 comment_end <- ".comment_end'"
 
-inline_comment_pattern <- paste0(inline_comment, "\"([^\"]*)\"")
-block_comment_pattern <- sprintf('invisible\\(\\"\\%s([^"]*)\\%s\\"\\)', comment_start, comment_end)
+inline_comment_pattern <- paste0("\\n?", inline_comment_token, "\\(\"([^\"]*)\"\\)")
+comment_pattern <- paste0("\\n?", comment_token, "\\(\"([^\"]*)\"\\)")
 
 mask_comment <- function(text, inline) {
   text <- quote_comment(text)
   if (inline) {
-    text <- paste0(inline_comment, text)
+    text <- paste0("\n", inline_comment_token, "(", text, ")")
   } else {
-    text <- paste0("invisible(",comment_start, text, comment_end, ")")
+    text <- paste0(comment_token, "(", text, ")")
   }
 
   text
@@ -193,7 +192,7 @@ mask_comment <- function(text, inline) {
 
 unmask_comments <- function(text) {
   text <- gsub(inline_comment_pattern, " \\1", text)
-  text <- gsub(block_comment_pattern, "\\1", text)
+  text <- gsub(comment_pattern, "\\1", text)
   text
 }
 
