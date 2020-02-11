@@ -13,32 +13,40 @@ ParseTree <- R6::R6Class(
   public = list(
     initialize = function(...) {
       private$.parse_output <- parse(...)
-      private$.parse_data <- as.data.table(getParseData(private$.parse_output))
-      private$.parse_data[, skip := FALSE]
-      private$.parse_data[, mod := NA_character_]
-      private$.parse_data[, envir := list(new_environment(parent = base_env()))]
 
+      pd <- as.data.table(getParseData(private$.parse_output))
+
+      # add "master_root" row
+      pd <- rbindlist(list(pd, list(id = 0L, parent = -Inf, text = "")), fill = T)
+
+      # define helper columns
+      pd[, skip := FALSE]
+      pd[, mod := NA_character_]
+      pd[, envir := list(new_environment(parent = base_env()))]
+
+      private$.parse_data <- pd
       self$root <- 0L
     },
 
 
     skip = function(ids) {
-      private$.parse_data[id %in% ids, skip := TRUE]
+      .parse_data[id %in% ids, skip := TRUE]
     },
 
     is_skipped = function(.id) {
-      private$.parse_data[id == .id, skip]
+      .parse_data[id == .id, skip]
     },
 
     is_terminal = function(.id) {
-      private$.parse_data[id == .id, terminal]
+      .parse_data[id == .id, terminal]
+    },
+
+    reset_root = function() {
+      root <- 0L
     }
   ),
 
   active = list(
-    root_id = function() {
-      private$.parse_data[parent == 0L, id]
-    },
 
     child_ids = function() {
 
@@ -92,12 +100,15 @@ ParseTree <- R6::R6Class(
       parse_data$id
     },
 
+    master_root_id = function() {
+      .parse_data[parent == 0L, id]
+    },
+
     root = function(value) {
       if (missing(value)) {
-        return(private$.root_id)
+        return(.root_id)
       }
-
-      private$.root_filter <- private$.parse_data$parent == value
+      private$.root_filter <- .parse_data$parent == value
       private$.root_id <- value
     },
 

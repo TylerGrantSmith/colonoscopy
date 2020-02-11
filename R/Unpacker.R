@@ -1,5 +1,4 @@
 # pt <- ParseTreeUnpacker$new(text = "test <- function(b = mutate, mutate = 3) {\n  \n  # comment\n  \n  a=mtcars %>% mutate(mpg = 2) %>% \n    group_by(cyl); a <- 3 -> c\n}\n\n")
-
 ParseTreeUnpacker <- R6::R6Class(
   "ParseTreeUnpacker",
   inherit = ParseTree,
@@ -22,6 +21,8 @@ ParseTreeUnpacker <- R6::R6Class(
       }
 
       .eval_env <- value
+
+      # assign the environment to the entire tree
       envir <<- value
     }
   )
@@ -33,9 +34,9 @@ ParseTreeUnpacker$set(
 
   function(envir = caller_env()) {
     eval_env <<- new_environment(parent = envir)
-    root <<- root_id
+    reset_root()
     recursive_unpack()
-    root <<- root_id
+    reset_root()
   }
 )
 
@@ -119,8 +120,14 @@ ParseTreeUnpacker$set(
     sub_pt <- parse_data_full[parent == assigned_id]
 
     if (identical(sub_pt$token, "SYMBOL")) {
+
       env <- sub_pt$envir[[1]]
       nm  <- sub_pt$text[[1]]
+
+      # Hacky non-accurate workaround for double arrow assignment
+      if (parse_data[assign_filter]$text %in% c('<<-', '->>') )
+        env <- env_parent(env)
+
       env_bind(.env = env, !!nm := assigned_id)
       parse_data_full[parent == assigned_id, skip := TRUE]
     }
