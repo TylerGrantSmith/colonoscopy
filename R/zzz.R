@@ -4,7 +4,6 @@
                     packr.dt = FALSE)
   toset <- !names(packr.opts) %in% names(options())
   if(any(toset)) options(packr.opts[toset])
-  context_tracker <<- ContextTracker$new()
 }
 
 .onAttach <- function(libname, pkgname) {

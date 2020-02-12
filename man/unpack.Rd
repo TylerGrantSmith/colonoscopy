@@ -2,9 +2,27 @@
 % Please edit documentation in R/unpack.R
 \name{unpack}
 \alias{unpack}
+\alias{unpack.default}
+\alias{unpack.srcref}
+\alias{unpack.srcfile}
+\alias{unpack.expression}
+\alias{unpack.character}
+\alias{unpack.pairlist}
 \title{Make explicit package dependencies}
 \usage{
-unpack(x, envir = caller_env())
+unpack(x, envir, ...)
+
+\method{unpack}{default}(x, envir, ...)
+
+\method{unpack}{srcref}(x, envir, ...)
+
+\method{unpack}{srcfile}(x, envir, ...)
+
+\method{unpack}{expression}(x, envir, ...)
+
+\method{unpack}{character}(x, envir = caller_env(), ...)
+
+\method{unpack}{pairlist}(x, envir, enclos)
 }
 \arguments{
 \item{x}{An expression to process.  Input is automatically quoted, use !! to unquote if

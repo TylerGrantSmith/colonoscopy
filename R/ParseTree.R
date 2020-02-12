@@ -24,27 +24,20 @@ ParseTree <- R6::R6Class(
       pd <- as.data.table(getParseData(private$.parse_output))
 
       # add "master_root" row
-      pd <- rbindlist(list(pd, list(id = 0L, parent = -Inf, text = "")), fill = T)
+      pd <- rbindlist(list(pd, list(terminal = F, id = 0L, parent = -Inf, text = "")), fill = T)
 
-      setkeyv(pd, "id")
+      # key on text order but add secondary index on id
+      setindexv(pd, "id")
+      setkeyv(pd, c("line1", "col1", "line2", "col2"))
 
       private$.parse_data <- pd
       self$root <- 0L
-
       private$.text_env <- new_environment(setNames(pd$text, pd$id))
       private$.token_env <- new_environment(setNames(pd$token, pd$id))
       private$.terminal_env <- new_environment(setNames(pd$terminal, pd$id))
 
     },
 
-
-    skip = function(ids) {
-      .parse_data[id %in% ids, skip := TRUE]
-    },
-
-    is_skipped = function(.id) {
-      .parse_data[id == .id, skip]
-    },
 
     is_terminal = function(.id) {
       .parse_data[id == .id, terminal]
@@ -56,25 +49,6 @@ ParseTree <- R6::R6Class(
   ),
 
   active = list(
-
-    child_ids = function() {
-
-      child_ids <- integer()
-
-      get_children <- function(pd) {
-        if (nrow(pd) == 0) return()
-
-        child_ids <<- c(child_ids, pd$id)
-        non_terminal_ids <- pd[terminal == F]$id
-        for (i in seq_along(non_terminal_ids)) {
-
-          get_children(private$.parse_data[parent %in% non_terminal_ids[[i]]])
-
-        }
-      }
-
-      get_children(private$.parse_data_filtered)
-    },
 
     source = function() {
       attr(.parse_output, "wholeSrcref")
@@ -113,7 +87,8 @@ ParseTree <- R6::R6Class(
       }
       private$.root_filter <- .parse_data$parent == value
       private$.parse_data_filtered <- private$.parse_data[private$.root_filter]
-      setkey(private$.parse_data_filtered, "id")
+      setindexv(private$.parse_data_filtered, "id")
+      setkeyv(private$.parse_data_filtered, c("line1", "col1", "line2", "col2"))
       private$.root_id <- value
     },
 

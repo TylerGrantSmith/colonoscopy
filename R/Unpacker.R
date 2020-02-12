@@ -1,29 +1,12 @@
-# pt <- ParseTreeUnpacker$new(text = "test <- function(b = mutate, mutate = 3) {\n  \n  # comment\n  \n  a=mtcars %>% mutate(mpg = 2) %>% \n    group_by(cyl); a <- 3 -> c\n}\n\n")
 ParseTreeUnpacker <- R6::R6Class(
   "ParseTreeUnpacker",
   inherit = ParseTree,
   portable = FALSE,
 
-  private = list(
-    .eval_env = empty_env()
-  ),
-
   public = list(
     initialize = function(..., envir = NULL) {
+      envir <<- envir
       super$initialize(...)
-    }
-  ),
-
-  active = list(
-    eval_env = function(value) {
-      if (missing(value)) {
-        return(private$.eval_env)
-      }
-
-      .eval_env <- value
-
-      # assign the environment to the entire tree
-      envir <<- value
     }
   )
 )
@@ -32,11 +15,8 @@ ParseTreeUnpacker$set(
   "public",
   "unpack",
 
-  function(envir = caller_env()) {
-    eval_env <<- new_environment(parent = envir)
-    # reset_root()
+  function() {
     recursive_unpack(0L)
-    # reset_root()
   }
 )
 
@@ -49,6 +29,7 @@ ParseTreeUnpacker$set(
     root <<- new_root
 
     unpack_assignment()
+
     if (any(parse_data$token == "FUNCTION")) {
       unpack_function()
     } else {
@@ -70,7 +51,7 @@ ParseTreeUnpacker$set(
       unpack_symb(id)
     }
 
-    expr_ids <- parse_data[token == "expr"]$id
+    expr_ids <- parse_data[terminal == FALSE]$id
 
     for (id in expr_ids) {
       recursive_unpack(id)
@@ -82,7 +63,7 @@ ParseTreeUnpacker$set(
   "private",
   "unpack_symb",
   function(.id) {
-      nm <- as.name(.text_env[[as.character(.id)]]) #as.name(parse_data[id == .id, text])
+      nm <- as.name(.text_env[[as.character(.id)]])
       set(parse_data_full, which(parse_data_full$id == .id), "text", deparse(unpack_symbol(nm, envir)))
   }
 )
@@ -104,15 +85,13 @@ ParseTreeUnpacker$set(
     }
 
     assign_row <- which(assign_filter)
-    parse_data_assign_filtered <- parse_data[assign_row]
-    assignment_token <- parse_data_assign_filtered$token
 
-    assigned_row <- switch(assignment_token,
-                          EQ_ASSIGN =,
-                          LEFT_ASSIGN = assign_row - 1,
-                          RIGHT_ASSIGN = assign_row + 1)
+    offset <- ifelse(parse_data$token[assign_row] == "RIGHT_ASSIGN", 1L, -1L)
 
-    assigned_id <- parse_data_assign_filtered$id
+    assigned_row <- assign_row + offset
+
+    assigned_id <- parse_data$id[assigned_row]
+
     sub_pt <- parse_data_full[parent == assigned_id]
 
     if (identical(sub_pt$token, "SYMBOL")) {
@@ -121,11 +100,43 @@ ParseTreeUnpacker$set(
       nm  <- sub_pt$text[[1]]
 
       # Hacky non-accurate workaround for double arrow assignment
-      if (parse_data_assign_filtered$text %in% c('<<-', '->>') )
+      if (parse_data$text[assign_row] %in% c('<<-', '->>') )
         env <- env_parent(env)
 
       env_bind(.env = env, !!nm := assigned_id)
     }
+  }
+)
+
+ParseTreeUnpacker$set(
+  "private",
+  "unpack_formals",
+  function() {
+
+    # drop the body expression.  should be the last one always...?
+    pl <- head(parse_data, -1)
+
+    expr_ids <- pl[token == "expr"]$id
+
+    # Lazy bind pre-bound arguments
+    bound_fml_nms <- pl[, .(token, nm = shift(text, 1L, type = "lag" ))][token == "EQ_FORMALS", nm]
+    bound_fml_ids <- pl[, .(token, as = shift(id,   1L, type = "lead"))][token == "EQ_FORMALS", as]
+    fmls <- lapply(bound_fml_ids, `class<-`, "lazy_unpack")
+    names(fmls) <- bound_fml_nms
+    env_bind_lazy(envir, !!!fmls)
+
+    # Bind remaining arguments
+    unbound_fml_nms <- setdiff(pl[token == "SYMBOL_FORMALS", text], bound_fml_nms)
+    fmls <- rep_named(unbound_fml_nms, list(NULL))
+    env_bind(envir, !!!fmls)
+  }
+)
+
+ParseTreeUnpacker$set(
+  "private",
+  "unpack_body",
+  function() {
+    recursive_unpack(tail(parse_data$id, 1L))
   }
 )
 
@@ -138,16 +149,18 @@ ParseTreeUnpacker$set(
     cur_env <- envir
     envir <<- enclos
 
-    for (.id in ids) {
-      browser()
-      if (parse_data[id == .id]$token == "SYMBOL_FORMALS") {
-        nm <- parse_data[id == .id]$text
-        env_bind_lazy(enclos, !!nm := .id)
-      }
+    unpack_formals()
+    unpack_body()
 
-      if (!parse_data[id == .id]$terminal) {
-        recursive_unpack(.id)
+    el <- as.list(enclos)
+    unpack_el <- which(vapply(el, function(x) inherits(x, "unpack"),logical(1)))
+    while(length(unpack_el) > 0) {
+      for(i in unpack_el) {
+        recursive_unpack(el[[i]])
+        class(enclos[[names(el)[[i]]]]) <- "unpacked"
       }
+      el <- as.list(enclos)
+      unpack_el <- which(vapply(el, function(x) inherits(x, "unpack"),logical(1)))
     }
 
     envir <<- cur_env
@@ -167,11 +180,23 @@ unpack_symbol <- function(x, envir) {
     x_env <- get_obj_env(xc, x_env)
   }
 
-  pkg_name <- get_pkg_name(x_env)
+  pkg_name <- get_pkg_name(x_env) %||% ""
 
-  if(is_null(pkg_name) || pkg_name == 'base') {
+  if (pkg_name == "base")
     return(x)
+
+  if (pkg_name == "") {
+    y <- get(xc, x_env)
+    if (inherits(y, "lazy_unpack")) {
+      # mark lazy data for unpacking
+      class(x_env[[xc]]) <- "unpack"
+
+      return(x)
+    } else {
+      return(x)
+    }
   }
+
 
   if(xc %in% getNamespaceExportsAndLazyData(pkg_name)) {
     return(make_exported_call(pkg_name, x))
