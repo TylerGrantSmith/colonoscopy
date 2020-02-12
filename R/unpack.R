@@ -1,20 +1,3 @@
-unpack_assignment <- function(x, envir) {
-  if(is_symbol(x[[2]])) {
-    switch(
-      as.character(x[[1]]),
-      '='= ,
-      '<-' = env_bind(envir, !!deparse(x[[2]]) := x[[3]], .eval_env = envir),
-      '<<-' = env_bind(tryCatch(where(deparse(x[[2]]), parent.env(envir)),
-                                error = function(e) envir),
-                       !!deparse(x[[2]]) := x[[3]], .eval_env = envir) # not sure this is right
-    )
-  }
-
-  return(as.call(list(x[[1]],
-                      unpack_(x[[2]], envir),
-                      unpack_(x[[3]], envir))))
-}
-
 #' Make explicit package dependencies
 #'
 #' \code{unpack} returns an expression with all symbols resolving to loaded namespaces by
@@ -34,7 +17,7 @@ unpack_assignment <- function(x, envir) {
 #' # Modified
 #' library(packr)
 #' unpack(unpack)
-unpack <- function(x, envir = caller_env(), ...) {
+unpack <- function(x, envir, ...) {
   UseMethod("unpack")
 }
 
@@ -50,7 +33,7 @@ unpack.expression <- function(x, envir, ...) {
   abort("Not implemented for this class")
 }
 
-unpack.character <- function(x, envir, ...) {
+unpack.character <- function(x, envir = caller_env(), ...) {
   if (!is_environment(envir)) {
     abort("envir must be an environment")
   }
@@ -60,20 +43,19 @@ unpack.character <- function(x, envir, ...) {
   cat(ptu$text)
 }
 
-unpack.function <- function(x, envir, use_fn_env = TRUE, useSource, ...) {
-
-  if (use_fn_env) {
-    envir <- environment(x)
-  }
-
-  if (!is.null(attr(x, "srcref"))) {
-    unpack(attr(x,"srcref"), envir)
-  }
+unpack.function <- function(x, envir, use_fn_env = TRUE, useSource = TRUE, ...) {
 
   control = c("keepInteger", "keepNA")
-  if (useSource) control <- append(control, "useSource")
 
-  unpack(deparse(x, width.cutoff = 59, control = control))
+  if (use_fn_env)
+    envir <- environment(x)
+
+  if (!is.null(attr(x, "srcref")))
+    unpack(attr(x,"srcref"), envir)
+
+  if (useSource)
+    control <- append(control, "useSource")
+
+  unpack(deparse(x, width.cutoff = 59, control = control), envir)
 }
 
-unpack()

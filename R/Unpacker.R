@@ -34,27 +34,28 @@ ParseTreeUnpacker$set(
 
   function(envir = caller_env()) {
     eval_env <<- new_environment(parent = envir)
-    reset_root()
-    recursive_unpack()
-    reset_root()
+    # reset_root()
+    recursive_unpack(0L)
+    # reset_root()
   }
 )
 
 ParseTreeUnpacker$set(
   "public",
   "recursive_unpack",
-  function() {
+  function(new_root) {
 
-    if (is_skipped(root)) {
-      return()
-    }
-
-    # make sure not to revisit
-    skip(root)
+    current_root <- root
+    root <<- new_root
 
     unpack_assignment()
-    unpack_function()
-    unpack_exprs()
+    if (any(parse_data$token == "FUNCTION")) {
+      unpack_function()
+    } else {
+      unpack_exprs()
+    }
+
+    root <<- current_root
 
   }
 )
@@ -63,19 +64,16 @@ ParseTreeUnpacker$set(
   "private",
   "unpack_exprs",
   function() {
-
     sym_ids <- parse_data[token %in% symbol_tokens]$id
 
     for (id in sym_ids) {
       unpack_symb(id)
-      skip(id)
     }
 
     expr_ids <- parse_data[token == "expr"]$id
 
     for (id in expr_ids) {
-      root <<- id
-      recursive_unpack()
+      recursive_unpack(id)
     }
   }
 )
@@ -84,11 +82,8 @@ ParseTreeUnpacker$set(
   "private",
   "unpack_symb",
   function(.id) {
-    if (!is_skipped(.id)) {
-      nm <- as.name(parse_data[id == .id, text])
-      envir <- parse_data[id == .id, envir][[1]]
+      nm <- as.name(.text_env[[as.character(.id)]]) #as.name(parse_data[id == .id, text])
       set(parse_data_full, which(parse_data_full$id == .id), "text", deparse(unpack_symbol(nm, envir)))
-    }
   }
 )
 
@@ -109,27 +104,27 @@ ParseTreeUnpacker$set(
     }
 
     assign_row <- which(assign_filter)
-    assignment_token <- parse_data[assign_filter]$token
+    parse_data_assign_filtered <- parse_data[assign_row]
+    assignment_token <- parse_data_assign_filtered$token
 
     assigned_row <- switch(assignment_token,
                           EQ_ASSIGN =,
                           LEFT_ASSIGN = assign_row - 1,
                           RIGHT_ASSIGN = assign_row + 1)
 
-    assigned_id <- parse_data[assigned_row, id]
+    assigned_id <- parse_data_assign_filtered$id
     sub_pt <- parse_data_full[parent == assigned_id]
 
     if (identical(sub_pt$token, "SYMBOL")) {
 
-      env <- sub_pt$envir[[1]]
+      env <- envir #sub_pt$envir[[1]]
       nm  <- sub_pt$text[[1]]
 
       # Hacky non-accurate workaround for double arrow assignment
-      if (parse_data[assign_filter]$text %in% c('<<-', '->>') )
+      if (parse_data_assign_filtered$text %in% c('<<-', '->>') )
         env <- env_parent(env)
 
       env_bind(.env = env, !!nm := assigned_id)
-      parse_data_full[parent == assigned_id, skip := TRUE]
     }
   }
 )
@@ -139,31 +134,23 @@ ParseTreeUnpacker$set(
   "unpack_function",
   function() {
 
-    if (!any(parse_data$token == "FUNCTION")) {
-      return()
-    }
-
-
     enclos <- new_environment(parent = envir)
-    parse_data_full[id %in% child_ids, envir := .(enclos)]
+    cur_env <- envir
+    envir <<- enclos
 
     for (.id in ids) {
-      if (is_skipped(.id)) {
-        next
-      }
-
+      browser()
       if (parse_data[id == .id]$token == "SYMBOL_FORMALS") {
         nm <- parse_data[id == .id]$text
         env_bind_lazy(enclos, !!nm := .id)
-        skip(.id)
       }
 
-      if (!is_terminal(.id)) {
-        ptc <- clone()
-        ptc$root <- .id
-        ptc$recursive_unpack()
+      if (!parse_data[id == .id]$terminal) {
+        recursive_unpack(.id)
       }
     }
+
+    envir <<- cur_env
   }
 )
 
@@ -171,7 +158,6 @@ ParseTreeUnpacker$set(
 unpack_symbol <- function(x, envir) {
   xc <- as.character(x)
   x_env <- tryCatch(pryr::where(xc, envir), error = function(e) NULL)
-
 
   if(is_null(x_env)) {
     return(x)

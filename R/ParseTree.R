@@ -5,6 +5,13 @@ ParseTree <- R6::R6Class(
   private = list(
     .parse_output = NULL,
     .parse_data = NULL,
+    .parse_data_filtered = NULL,
+
+    .token_env = NULL,
+    .terminal_env = NULL,
+    .text_env = NULL,
+    .hash_env = NULL,
+
     .root_filter = NULL,
     .root_id = NULL,
     .envir = NULL
@@ -19,13 +26,15 @@ ParseTree <- R6::R6Class(
       # add "master_root" row
       pd <- rbindlist(list(pd, list(id = 0L, parent = -Inf, text = "")), fill = T)
 
-      # define helper columns
-      pd[, skip := FALSE]
-      pd[, mod := NA_character_]
-      pd[, envir := list(new_environment(parent = base_env()))]
+      setkeyv(pd, "id")
 
       private$.parse_data <- pd
       self$root <- 0L
+
+      private$.text_env <- new_environment(setNames(pd$text, pd$id))
+      private$.token_env <- new_environment(setNames(pd$token, pd$id))
+      private$.terminal_env <- new_environment(setNames(pd$terminal, pd$id))
+
     },
 
 
@@ -54,50 +63,44 @@ ParseTree <- R6::R6Class(
 
       get_children <- function(pd) {
         if (nrow(pd) == 0) return()
+
         child_ids <<- c(child_ids, pd$id)
+        non_terminal_ids <- pd[terminal == F]$id
+        for (i in seq_along(non_terminal_ids)) {
 
-        pd <- pd[terminal == F]
-
-        for (i in 1:nrow(pd)) {
-
-          get_children(parse_data_full[parent %in% pd[i, id]])
+          get_children(private$.parse_data[parent %in% non_terminal_ids[[i]]])
 
         }
       }
 
-      get_children(parse_data)
-
-      sort(child_ids)
+      get_children(private$.parse_data_filtered)
     },
 
     source = function() {
-      attr(private$.parse_output, "wholeSrcref")
+      attr(.parse_output, "wholeSrcref")
     },
 
     envir = function(value) {
       if (missing(value)) {
         return(private$.envir)
       }
-
-      if (!is_environment(value)) abort("Not an environment")
-
       private$.envir <- value
     },
 
     srcfile = function() {
-      attr(private$.parse_data, "srcfile")
+      attr(.parse_data, "srcfile")
     },
 
     parse_data_full = function() {
-      private$.parse_data
+      .parse_data
     },
 
     parse_data = function() {
-      private$.parse_data[private$.root_filter]
+      .parse_data_filtered
     },
 
     ids = function() {
-      parse_data$id
+      .parse_data_filtered$id
     },
 
     master_root_id = function() {
@@ -109,6 +112,8 @@ ParseTree <- R6::R6Class(
         return(.root_id)
       }
       private$.root_filter <- .parse_data$parent == value
+      private$.parse_data_filtered <- private$.parse_data[private$.root_filter]
+      setkey(private$.parse_data_filtered, "id")
       private$.root_id <- value
     },
 
