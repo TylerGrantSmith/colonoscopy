@@ -3,11 +3,6 @@ Description: Add package namespace access `::` for the selection
 Binding: unpack_selection
 Interactive: false
 
-Name: pack at cursor
-Description: Remove package namespace access `::`
-Binding: pack_cursor
-Interactive: false
-
 Name: pack selection
 Description: Remove package namespace access `::` for the selection
 Binding: pack_selection

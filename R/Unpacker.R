@@ -45,13 +45,29 @@ ParseTreeUnpacker$set(
   "private",
   "unpack_exprs",
   function() {
+
+    # need to ignore symbols preceded by $
+
+
+    list_skip <- integer()
+
+    if (any(parse_data$token == "'$'")) {
+      for (.id in ids) {
+        if (parse_data[,.(id, pt = shift(token, 1L, '', "lag"))][id == .id, pt] == "'$'") {
+          list_skip <- append(list_skip, .id)
+        }
+      }
+    }
+
     sym_ids <- parse_data[token %in% symbol_tokens]$id
+    sym_ids <- setdiff(sym_ids, list_skip)
 
     for (id in sym_ids) {
       unpack_symb(id)
     }
 
     expr_ids <- parse_data[terminal == FALSE]$id
+    expr_ids <- setdiff(expr_ids, list_skip)
 
     for (id in expr_ids) {
       recursive_unpack(id)
@@ -169,12 +185,10 @@ ParseTreeUnpacker$set(
 
 
 unpack_symbol <- function(x, envir) {
-  xc <- as.character(x)
-  x_env <- tryCatch(pryr::where(xc, envir), error = function(e) NULL)
+  xc <- as_character(x)
+  x_env <- tryCatch(where(xc, envir), error = function(e) NULL)
 
-  if(is_null(x_env)) {
-    return(x)
-  }
+  if(is_null(x_env)) { return(x) }
 
   if(grepl("^imports:", env_name(x_env)))  {
     x_env <- get_obj_env(xc, x_env)
@@ -182,27 +196,22 @@ unpack_symbol <- function(x, envir) {
 
   pkg_name <- get_pkg_name(x_env) %||% ""
 
-  if (pkg_name == "base")
-    return(x)
+  if (pkg_name == "base") { return(x) }
 
   if (pkg_name == "") {
     y <- get(xc, x_env)
+
+    # mark lazy data for unpacking
     if (inherits(y, "lazy_unpack")) {
-      # mark lazy data for unpacking
-      class(x_env[[xc]]) <- "unpack"
-
-      return(x)
-    } else {
-      return(x)
+        class(x_env[[xc]]) <- "unpack"
     }
+
+    return(x)
   }
 
-
-  if(xc %in% getNamespaceExportsAndLazyData(pkg_name)) {
-    return(make_exported_call(pkg_name, x))
+  if (is_exported(xc, pkg_name)) {
+    make_exported_call(pkg_name, x)
   } else {
-    return(make_internal_call(pkg_name, x))
+    make_internal_call(pkg_name, x)
   }
-
-  return(x)
 }

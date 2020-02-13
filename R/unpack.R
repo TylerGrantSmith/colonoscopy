@@ -31,24 +31,6 @@ unpack.default <- function(x, envir, ...) {
 
 #' @rdname unpack
 #' @export
-unpack.srcref <- function(x, envir, ...) {
-  unpack(attr(x, "srcfile"), envir, ...)
-}
-
-#' @rdname unpack
-#' @export
-unpack.srcfile <- function(x, envir, ...) {
-  unpack(paste0(x$lines, collapse = "\n"))
-}
-
-#' @rdname unpack
-#' @export
-unpack.expression <- function(x, envir, ...) {
-  abort("Not implemented for this class")
-}
-
-#' @rdname unpack
-#' @export
 unpack.character <- function(x, envir = caller_env(), ...) {
   if (!is_environment(envir)) {
     abort("envir must be an environment")
@@ -63,27 +45,6 @@ unpack.character <- function(x, envir = caller_env(), ...) {
 
 #' @rdname unpack
 #' @export
-unpack.pairlist <- function(x, envir, enclos) {
-  x$`...` <- NULL
-  x <- setNames(lapply(x, unpack, envir), names(x))
-  x <- setNames(lapply(x, str_to_lang), names(x))
-  rlang::exec(env_bind_lazy, !!!c(x, .env = envir))
-
-  x
-}
-
-str_to_lang <- function(s) {
-  if (s != "") {
-    str2lang(s)
-  } else {
-    missing_arg()
-  }
-}
-
-unpack.name <- function(x, envir) { #comment
-  out <- unpack(as.character(x), envir)
-}
-
 unpack.function <- function(x, envir = caller_env(), use_fn_env = TRUE, useSource = T,...) {
   control = c("keepInteger", "keepNA")
 

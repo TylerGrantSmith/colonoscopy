@@ -1,11 +1,9 @@
 get_obj_env <- function(x, env) {
-  tryCatch(environment(get0(as.character(x), env)),
-           error = function(e) NULL
-  )
+  environment(get0(x, env))
 }
 
 get_pkg_name <- function(env) {
-  if(is.null(env)) return(NULL)
+  if(is_null(env)) return(NULL)
 
   en <- env_name(env)
 
@@ -18,34 +16,10 @@ get_pkg_name <- function(env) {
   return(NULL)
 }
 
-is_assignment <- function(x) {
-  deparse(x[[1]]) %in% c("=", "<-", "<<-")
-}
-
 is_exported <- function(x, ns) {
-  if(is.character(ns)) ns <- getNamespace(ns)
-  if(!isNamespace(ns)) return(FALSE)
-  as.character(x) %in% getNamespaceExports(ns)
-}
-
-is_function_def <- function(x) {
-  x[[1]] == as.name('function')
-}
-
-is_list_access <- function(x) {
-  deparse(x[[1]]) %in% c("$")
-}
-
-is_ns_access <- function(x) {
-  deparse(x[[1]]) %in% c("::",":::")
-}
-
-is_pipe <- function(x) {
-  deparse(x[[1]]) %in% c('%>%')
-}
-
-make_function_call <- function(args, body) {
-  call("function", as.pairlist(args), body)
+  if(is_character(ns)) ns <- ns_env(ns)
+  if(!is_namespace(ns)) return(FALSE)
+  as_character(x) %in% ls(pkg_env(ns))
 }
 
 make_exported_call <- function(pkg, name) {
@@ -63,4 +37,13 @@ getNamespaceExportsAndLazyData <- function(ns) {
   else
     c(names(.getNamespaceInfo(ns, "exports")),
       names(.getNamespaceInfo(ns, "lazydata")))
+}
+
+
+str_to_lang <- function(s) {
+  if (s != "") {
+    str2lang(s)
+  } else {
+    missing_arg()
+  }
 }
