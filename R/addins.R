@@ -23,17 +23,12 @@ get_token_start <- function(context, selection) {
 }
 
 get_token_end <- function(context, selection) {
-  row <- selection$range$start[[1]]
-  col <- selection$range$start[[2]]
-  buffer <- context$contents[[row]]
-
-  line_tail = substr(buffer, col, nchar(buffer))
-
-  offset = attr(regexec("^[a-zA-Z._0-9:]+", line_tail)[[1]], "match.length")
-
-  if(offset == -1L) {
-    offset = 0L
-  }
+  row       <- selection$range$start[[1]]
+  col       <- selection$range$start[[2]]
+  buffer    <- context$contents[[row]]
+  line_tail <- substr(buffer, col, nchar(buffer))
+  offset    <- attr(regexec("^[a-zA-Z._0-9:]+", line_tail)[[1]], "match.length")
+  offset    <- max(offset, 0L)
 
   col + offset
 }
@@ -41,25 +36,27 @@ get_token_end <- function(context, selection) {
 unpack_selection <- function(envir = caller_env()) {
   check_rstudio()
   context_tracker <- ContextTracker$new()
-  context_tracker$set_selections()
 
-  ut <- lapply(context_tracker$buffer, #parsed_text,
-               function(x) lapply(x, unpack, envir))
+  ut <-
+    context_tracker$buffer %>%
+    purrr::map_depth(2, unpack, envir)
 
-  if(is.null(ut)) return()
+  if(is_null(ut)) return()
 
-  invisible(context_tracker$replace_in_context(ut))
+  context_tracker$replace_in_context(ut)
 }
 
 pack_selection <- function() {
   check_rstudio()
   context_tracker <- ContextTracker$new()
-  context_tracker$set_selections()
-  ut <- lapply(context_tracker$buffer,function(x) lapply(x, pack))
+
+  ut <-
+    context_tracker$buffer %>%
+    purrr::map_depth(2, pack, envir)
 
   if(is.null(ut)) return()
 
-  invisible(context_tracker$replace_in_context(ut))
+  context_tracker$replace_in_context(ut)
 
 }
 

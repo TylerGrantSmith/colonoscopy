@@ -7,11 +7,7 @@ ParseTree <- R6::R6Class(
     .parse_data = NULL,
     .parse_data_filtered = NULL,
 
-    .token_env = NULL,
-    .terminal_env = NULL,
     .text_env = NULL,
-    .hash_env = NULL,
-
     .root_filter = NULL,
     .root_id = NULL,
     .envir = NULL
@@ -19,23 +15,24 @@ ParseTree <- R6::R6Class(
 
   public = list(
     initialize = function(...) {
-      private$.parse_output <- parse(...)
+      .parse_output <- parse(...)
 
-      pd <- as.data.table(getParseData(private$.parse_output))
+      pd <- as.data.table(utils::getParseData(.parse_output))
 
-      # add "master_root" row
-      pd <- rbindlist(list(pd, list(terminal = F, id = 0L, parent = -Inf, text = "")), fill = T)
+      # add id = 0 row
+      pd <- rbindlist(list(pd, list(terminal = F,
+                                    id = 0L,
+                                    parent = -Inf,
+                                    text = "")), fill = T)
 
       # key on text order but add secondary index on id
       setindexv(pd, "id")
       setkeyv(pd, c("line1", "col1", "line2", "col2"))
 
-      private$.parse_data <- pd
-      self$root <- 0L
-      private$.text_env <- new_environment(setNames(pd$text, pd$id))
-      private$.token_env <- new_environment(setNames(pd$token, pd$id))
-      private$.terminal_env <- new_environment(setNames(pd$terminal, pd$id))
+      .parse_data <<- pd
+      .text_env <<- rlang::new_environment(setNames(pd$text, pd$id))
 
+      root <<- 0L
     },
 
 
@@ -49,20 +46,11 @@ ParseTree <- R6::R6Class(
   ),
 
   active = list(
-
-    source = function() {
-      attr(.parse_output, "wholeSrcref")
-    },
-
     envir = function(value) {
       if (missing(value)) {
-        return(private$.envir)
+        return(.envir)
       }
-      private$.envir <- value
-    },
-
-    srcfile = function() {
-      attr(.parse_data, "srcfile")
+      .envir <<- value
     },
 
     parse_data_full = function() {
@@ -78,18 +66,19 @@ ParseTree <- R6::R6Class(
     },
 
     master_root_id = function() {
-      .parse_data[parent == 0L, id]
+      .parse_data$id[.parse_data$parent == 0L]
     },
 
     root = function(value) {
       if (missing(value)) {
         return(.root_id)
       }
-      private$.root_filter <- .parse_data$parent == value
-      private$.parse_data_filtered <- private$.parse_data[private$.root_filter]
-      setindexv(private$.parse_data_filtered, "id")
-      setkeyv(private$.parse_data_filtered, c("line1", "col1", "line2", "col2"))
-      private$.root_id <- value
+      .root_id <<- value
+      .root_filter <<- .parse_data$parent == value
+      .parse_data_filtered <<- private$.parse_data[private$.root_filter]
+
+      setindexv(.parse_data_filtered, "id")
+      setkeyv(.parse_data_filtered, c("line1", "col1", "line2", "col2"))
     },
 
     text = function() {
@@ -115,7 +104,7 @@ expand_parse_data <- function(pd) {
   pd[filter, deco_text := purrr::map2_chr(deco_text, space,  ~paste0(strrep(' ', .y), .x))]
   pd[filter, deco_text := purrr::map2_chr(deco_text, blank_lines, ~paste0(.x, strrep('\n', .y)))]
 
-  deco_text <- paste0(pd[filter]$deco_text, collapse = "")
+  deco_text <- paste0(pd$deco_text[filter], collapse = "")
   deco_text
 }
 

@@ -1,5 +1,5 @@
-ParseTreePacker <- R6::R6Class(
-  "ParseTreePacker",
+ParseTreeUnscoper <- R6::R6Class(
+  "ParseTreeUnscoper",
   inherit = ParseTree,
   portable = FALSE,
 
@@ -10,14 +10,15 @@ ParseTreePacker <- R6::R6Class(
   public = list(
     initialize = function(...) {
       super$initialize(...)
+      unscope()
     }
   )
 )
 
-ParseTreePacker$set(
+ParseTreeUnscoper$set(
   "public",
-  "pack",
-  function() {
+  "unscope",
+  function(add_roxygen = FALSE) {
     colon_rows <- which(parse_data_full$token %in% c("NS_GET", "NS_GET_INT"))
 
     if (length(colon_rows) == 0) {

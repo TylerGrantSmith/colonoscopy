@@ -1,39 +1,40 @@
-ParseTreeUnpacker <- R6::R6Class(
-  "ParseTreeUnpacker",
+ParseTreeScoper <- R6::R6Class(
+  "ParseTreeScoper",
   inherit = ParseTree,
   portable = FALSE,
 
   public = list(
     initialize = function(..., envir = NULL) {
-      envir <<- envir
       super$initialize(...)
+      envir <<- envir
+      scope()
     }
   )
 )
 
-ParseTreeUnpacker$set(
+ParseTreeScoper$set(
   "public",
-  "unpack",
+  "scope",
 
   function() {
-    recursive_unpack(0L)
+    recursive_scope(0L)
   }
 )
 
-ParseTreeUnpacker$set(
+ParseTreeScoper$set(
   "public",
-  "recursive_unpack",
+  "recursive_scope",
   function(new_root) {
 
     current_root <- root
     root <<- new_root
 
-    unpack_assignment()
+    scope_assignment()
 
     if (any(parse_data$token == "FUNCTION")) {
-      unpack_function()
+      scope_function()
     } else {
-      unpack_exprs()
+      scope_exprs()
     }
 
     root <<- current_root
@@ -41,53 +42,52 @@ ParseTreeUnpacker$set(
   }
 )
 
-ParseTreeUnpacker$set(
+ParseTreeScoper$set(
   "private",
-  "unpack_exprs",
+  "scope_exprs",
   function() {
 
     # need to ignore symbols preceded by $
 
 
-    list_skip <- integer()
-
-    if (any(parse_data$token == "'$'")) {
+    skip_ids <- integer()
+    if (any(parse_data$token %in% c("NS_GET", "NS_GET_INT", "'$'"))) {
       for (.id in ids) {
-        if (parse_data[,.(id, pt = shift(token, 1L, '', "lag"))][id == .id, pt] == "'$'") {
-          list_skip <- append(list_skip, .id)
+        if (parse_data[,.(id, pt = shift(token, 1L, '', "lag"))][id == .id, pt] %in% c("NS_GET", "NS_GET_INT", "'$'")) {
+          skip_ids <- append(skip_ids, .id)
         }
       }
     }
 
     sym_ids <- parse_data[token %in% symbol_tokens]$id
-    sym_ids <- setdiff(sym_ids, list_skip)
+    sym_ids <- setdiff(sym_ids, skip_ids)
 
     for (id in sym_ids) {
-      unpack_symb(id)
+      scope_symb(id)
     }
 
     expr_ids <- parse_data[terminal == FALSE]$id
-    expr_ids <- setdiff(expr_ids, list_skip)
+    expr_ids <- setdiff(expr_ids, skip_ids)
 
     for (id in expr_ids) {
-      recursive_unpack(id)
+      recursive_scope(id)
     }
   }
 )
 
-ParseTreeUnpacker$set(
+ParseTreeScoper$set(
   "private",
-  "unpack_symb",
+  "scope_symb",
   function(.id) {
-      nm <- as.name(.text_env[[as.character(.id)]])
-      set(parse_data_full, which(parse_data_full$id == .id), "text", deparse(unpack_symbol(nm, envir)))
+      nm <- .text_env[[as.character(.id)]]
+      set(parse_data_full, which(parse_data_full$id == .id), "text", scope_symbol(nm, envir))
   }
 )
 
 
-ParseTreeUnpacker$set(
+ParseTreeScoper$set(
   "private",
-  "unpack_assignment",
+  "scope_assignment",
   function() {
 
     assign_filter <- parse_data$token %in% c("LEFT_ASSIGN", "RIGHT_ASSIGN", "EQ_ASSIGN")
@@ -124,9 +124,9 @@ ParseTreeUnpacker$set(
   }
 )
 
-ParseTreeUnpacker$set(
+ParseTreeScoper$set(
   "private",
-  "unpack_formals",
+  "scope_formals",
   function() {
 
     # drop the body expression.  should be the last one always...?
@@ -137,7 +137,7 @@ ParseTreeUnpacker$set(
     # Lazy bind pre-bound arguments
     bound_fml_nms <- pl[, .(token, nm = shift(text, 1L, type = "lag" ))][token == "EQ_FORMALS", nm]
     bound_fml_ids <- pl[, .(token, as = shift(id,   1L, type = "lead"))][token == "EQ_FORMALS", as]
-    fmls <- lapply(bound_fml_ids, `class<-`, "lazy_unpack")
+    fmls <- lapply(bound_fml_ids, `class<-`, "lazy_scope")
     names(fmls) <- bound_fml_nms
     env_bind_lazy(envir, !!!fmls)
 
@@ -148,35 +148,35 @@ ParseTreeUnpacker$set(
   }
 )
 
-ParseTreeUnpacker$set(
+ParseTreeScoper$set(
   "private",
-  "unpack_body",
+  "scope_body",
   function() {
-    recursive_unpack(tail(parse_data$id, 1L))
+    recursive_scope(tail(parse_data$id, 1L))
   }
 )
 
-ParseTreeUnpacker$set(
+ParseTreeScoper$set(
   "private",
-  "unpack_function",
+  "scope_function",
   function() {
 
     enclos <- new_environment(parent = envir)
     cur_env <- envir
     envir <<- enclos
 
-    unpack_formals()
-    unpack_body()
+    scope_formals()
+    scope_body()
 
     el <- as.list(enclos)
-    unpack_el <- which(vapply(el, function(x) inherits(x, "unpack"),logical(1)))
-    while(length(unpack_el) > 0) {
-      for(i in unpack_el) {
-        recursive_unpack(el[[i]])
-        class(enclos[[names(el)[[i]]]]) <- "unpacked"
+    scope_el <- which(vapply(el, function(x) inherits(x, "scope"),logical(1)))
+    while(length(scope_el) > 0) {
+      for(i in scope_el) {
+        recursive_scope(el[[i]])
+        class(enclos[[names(el)[[i]]]]) <- "scopeed"
       }
       el <- as.list(enclos)
-      unpack_el <- which(vapply(el, function(x) inherits(x, "unpack"),logical(1)))
+      scope_el <- which(vapply(el, function(x) inherits(x, "scope"),logical(1)))
     }
 
     envir <<- cur_env
@@ -184,14 +184,14 @@ ParseTreeUnpacker$set(
 )
 
 
-unpack_symbol <- function(x, envir) {
-  xc <- as_character(x)
-  x_env <- tryCatch(where(xc, envir), error = function(e) NULL)
+scope_symbol <- function(x, envir) {
+  x_c   <- as.character(x)
+  x_env <- tryCatch(where(x_c, envir), error = function(e) NULL)
 
   if(is_null(x_env)) { return(x) }
 
   if(grepl("^imports:", env_name(x_env)))  {
-    x_env <- get_obj_env(xc, x_env)
+    x_env <- get_obj_env(x_c, x_env)
   }
 
   pkg_name <- get_pkg_name(x_env) %||% ""
@@ -199,19 +199,19 @@ unpack_symbol <- function(x, envir) {
   if (pkg_name == "base") { return(x) }
 
   if (pkg_name == "") {
-    y <- get(xc, x_env)
+    y <- get(x_c, x_env)
 
-    # mark lazy data for unpacking
-    if (inherits(y, "lazy_unpack")) {
-        class(x_env[[xc]]) <- "unpack"
+    # mark lazy data for scopeing
+    if (inherits(y, "lazy_scope")) {
+        class(x_env[[x_c]]) <- "scope"
     }
 
     return(x)
   }
 
-  if (is_exported(xc, pkg_name)) {
-    make_exported_call(pkg_name, x)
+  if (is_exported(x_c, pkg_name)) {
+    paste0(pkg_name, "::", x_c)
   } else {
-    make_internal_call(pkg_name, x)
+    paste0(pkg_name, ":::", x_c)
   }
 }

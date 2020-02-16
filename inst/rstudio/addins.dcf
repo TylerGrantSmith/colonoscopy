@@ -1,9 +1,9 @@
-Name: unpack selection
+Name: scope selection
 Description: Add package namespace access `::` for the selection
-Binding: unpack_selection
+Binding: scope_selection
 Interactive: false
 
-Name: pack selection
+Name: unscope selection
 Description: Remove package namespace access `::` for the selection
-Binding: pack_selection
+Binding: unscope_selection
 Interactive: false

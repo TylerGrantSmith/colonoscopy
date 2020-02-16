@@ -3,10 +3,16 @@ ContextTracker <- R6::R6Class(
   portable = FALSE,
   cloneable = FALSE,
 
+  private = list(
+    .context = NULL
+  ),
+
   public = list(
 
     initialize = function() {
-      private$.context <- rstudioapi::getActiveDocumentContext()
+      .context <<- rstudioapi::getActiveDocumentContext()
+
+      set_selections()
     },
 
     set_selections = function() {
@@ -21,13 +27,19 @@ ContextTracker <- R6::R6Class(
 
       rstudioapi::setSelectionRanges(purrr::map(private$.context$selection, purrr::pluck, 'range'), private$.context$id)
       private$.context <- rstudioapi::getActiveDocumentContext()
-    }
-  ),
+    },
 
-  private = list(
-    patterns = c(start = "[a-zA-Z._0-9]+$",
-                 end   = "^[a-zA-Z._0-9]+"),
-    .context = NULL
+    replace_in_context = function(.text) {
+      if(rlang::is_null(.text)) return()
+
+      # probably a better way to do this?
+      text <- .text %>% purrr::map(unlist) %>% purrr::map_chr(paste0, collapse = "\n")
+
+      purrr::map2(ranges,
+                  text,
+                  rstudioapi::insertText,
+                  id = id)
+    }
   ),
 
   active = list(
@@ -35,40 +47,24 @@ ContextTracker <- R6::R6Class(
       if (missing(ct)) {
         return(.context)
       }
+
       private$.context <- ct
     },
 
-    id = function() { context$id },
+    id = function() {
+      context$id
+    },
 
     buffer = function() {
-      purrr::map(context$selection, purrr::pluck, 'text')
+      purrr::map(selection, purrr::pluck, 'text')
     },
 
     ranges = function() {
-      purrr::map(context$selection, purrr::pluck, 'range')
+      purrr::map(selection, purrr::pluck, 'range')
     },
 
-    selection = function() context$selection
+    selection = function() {
+      context$selection
+    }
   )
 )
-
-ContextTracker$set(
-  "public",
-  "replace_in_context",
-  function(.text) {
-    if(is.null(.text)) return()
-
-    ranges <- self$ranges
-    buffer <- self$buffer
-    id <- self$id
-
-    # probably a better way to do this?
-    text <- lapply(lapply(.text, unlist), paste0, collapse = "\n")
-
-    purrr::map2(ranges,
-                text,
-                rstudioapi::insertText,
-                id = id)
-  }
-)
-

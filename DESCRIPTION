@@ -1,24 +1,23 @@
-Package: packr
-Title: packr
-Version: 0.0.1
+Package: colonoscopy
+Title: Tools for adding and removing namespace access colonoperators, `::` and `:::`.
+Version: 0.1.0
 Authors@R: 
     person(given = "Tyler Grant",
            family = "Smith",
            role = c("aut", "cre"),
-           email = "tyler.grant.smith@gmail.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: Utility to rewrite function calls to make them use double colon and triple colon operators.
+           email = "tyler.grant.smith@gmail.com")
+Description: Add something later.
 Encoding: UTF-8
 LazyData: true
 Imports: 
     rlang (>= 0.3.1),
     purrr,
     data.table,
+    magrittr
 RoxygenNote: 7.0.2
 Suggests: 
     testthat (>= 2.1.0),
-    rstudioapi,
-    covr
-URL: https://github.com/TylerGrantSmith/packr
-BugReports: https://github.com/TylerGrantSmith/packr/issues
+    rstudioapi
+URL: https://github.com/TylerGrantSmith/colonoscopy
+BugReports: https://github.com/TylerGrantSmith/colonoscopy/issues
 License: GPL-3
