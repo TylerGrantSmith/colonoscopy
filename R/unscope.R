@@ -1,11 +1,24 @@
+#' Remove \code{`::`} and \code{`:::`} operators
+#'
+#' @description TBD
+#' @param x
+#'
+#' @param ...
+#'
 #' @export
+#'
+#' @examples
+#'
+#' unscope("2+2")
+#'
+#' unscope("utils::head(colonoscopy::scope)")
 unscope <- function(x, ...) {
   UseMethod("unscope")
 }
 
 
-#' @rdname unscope
 #' @export
+#' @keywords internal
 unscope.default <- function(x) {
   tryCatch(x <- as.character(x),
            error = function(e)
@@ -13,24 +26,33 @@ unscope.default <- function(x) {
   unscope.character(x)
 }
 
-#' @rdname unscope
 #' @export
+#' @keywords internal
 unscope.character <- function(x) {
-  header <- regmatches(x, regexec("^\\s+", x))[[1]]
-  footer <- regmatches(x, regexec("\\s+$", x))[[1]]
-
-  ptp <- ParseTreeUnscoper$new(text = x)
-  paste0(header, ptp$text, footer, collapse = "")
+  ParseTreeUnscoper$new(text = x)
 }
 
-unscope.function <- function(x, useSource = T) {
+#' @export
+#' @keywords internal
+unscope.function <- function(x, ...) {
+  abort("Cannot `unscope` functions.  Use `unscope_function` instead.")
+}
+
+#' Unscope a function
+#'
+#' @export
+unscope_function <- function(f, useSource = T) {
   control = c("keepInteger", "keepNA")
 
-  if (!is.null(attr(x, "srcref")))
-    return(unscope(attr(x,"srcref")))
+  if (is_primitive(f)) {
+    return(as.character(substitute(x)))
+  }
+
+  if (!is.null(attr(f, "srcref")))
+    return(unscope(attr(f,"srcref")))
 
   if (useSource)
     control <- append(control, "useSource")
 
-  unscope(deparse(x, width.cutoff = 59, control = control))
+  unscope(deparse(f, width.cutoff = 59, control = control))
 }

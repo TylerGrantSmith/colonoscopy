@@ -11,6 +11,11 @@ ParseTreeUnscoper <- R6::R6Class(
     initialize = function(...) {
       super$initialize(...)
       unscope()
+    },
+
+    print = function(...) {
+      cat("Unscoped output:\n")
+      super$print()
     }
   )
 )
@@ -21,17 +26,13 @@ ParseTreeUnscoper$set(
   function(add_roxygen = FALSE) {
     colon_rows <- which(parse_data_full$token %in% c("NS_GET", "NS_GET_INT"))
 
-    if (length(colon_rows) == 0) {
+    if (length(colon_rows)==0) {
       return()
     }
 
-    package_rows <- colon_rows - 1L
-    name_rows    <- colon_rows + 1L
+    package_rows <- colon_rows - 1
 
-    colon_ids   <- parse_data_full$id[colon_rows]
-    package_ids <- parse_data_full$id[package_rows]
-    name_ids    <- parse_data_full$id[name_rows]
-
-    parse_data_full[c(colon_ids, package_ids), text := ""]
+    parse_data_full[c(package_rows, colon_rows), text := ""]
+    browser()
   }
 )

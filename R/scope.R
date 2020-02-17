@@ -17,7 +17,6 @@
 #' library(colonoscopy)
 #' scope(scope)
 #' @export
-#' @importFrom rlang caller_env is_null abort
 scope <- function(x, envir = caller_env(), ...) {
     if (is_null(x))
       abort("`x` cannot be NULL.")
@@ -26,7 +25,6 @@ scope <- function(x, envir = caller_env(), ...) {
 
 #' @rdname scope
 #' @export
-#' @importFrom rlang caller_env
 scope.default <- function(x, envir = caller_env(), ...) {
   tryCatch(x <- as.character(x),
            error = function(e) abort("Unable to convert x to a character"))
@@ -36,34 +34,28 @@ scope.default <- function(x, envir = caller_env(), ...) {
 
 #' @rdname scope
 #' @export
-#' @importFrom rlang is_environment caller_env
 scope.character <- function(x, envir = caller_env(), ...) {
   if (!is_environment(envir)) {
     abort("`envir`` must be an environment")
   }
-
-  header <- regmatches(x, regexec("^\\s+", x))[[1]]
-  footer <- regmatches(x, regexec("\\s+$", x))[[1]]
-  ptu <- ParseTreeScoper$new(text = x, envir = envir, keep.source = T)
-  paste0(header, ptu$text, footer, collapse = "")
+  ParseTreeScoper$new(text = x, envir = envir, keep.source = T)
 }
 
 #' @rdname scope
 #' @export
-#' @importFrom rlang caller_env is_null base_env get_env is_primitive
-scope.function <- function(x, envir = get_env(x), useSource = T,...) {
+scope.function <- function(x, ...) {
+  abort("Cannot `scope` functions.  Use `scope_function` instead.")
+}
+
+#' @export
+scope_function <- function(f, envir = get_env(f) %||% caller_env(), useSource = T,...) {
   control = c("keepInteger", "keepNA")
 
-  if (is_primitive(x)) {
-    return(as.character(substitute(x)))
-  }
-
-  if (!is_null(attr(x, "srcref")))
-    return(scope(attr(x,"srcref"), envir = envir))
+  if (!is_null(attr(f, "srcref")))
+    return(scope(attr(f,"srcref"), envir = envir))
 
   if (useSource)
     control <- append(control, "useSource")
 
-  scope(deparse(x, width.cutoff = 59, control = control), envir = envir)
+  scope(deparse(f, width.cutoff = 59, control = control), envir = envir)
 }
-#

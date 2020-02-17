@@ -13,7 +13,7 @@ scope(x, envir = caller_env(), ...)
 
 \method{scope}{character}(x, envir = caller_env(), ...)
 
-\method{scope}{`function`}(x, envir = get_env(x), useSource = T, ...)
+\method{scope}{`function`}(x, ...)
 }
 \arguments{
 \item{x}{An expression to process.  Input is automatically quoted, use !! to unquote if
