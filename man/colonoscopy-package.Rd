@@ -4,9 +4,22 @@
 \name{colonoscopy-package}
 \alias{colonoscopy}
 \alias{colonoscopy-package}
-\title{colonoscopy: Tools for adding and removing namespace access colonoperators, `::` and `:::`.}
+\title{Exposing or hiding package dependencies in R code.}
 \description{
-Add something later.
+colonoscopy allows you to transform R code by adding or
+removing namespace access operators (`::` and `:::`) in accordance
+with the search path in an environment.
+}
+\details{
+RStudio users can find addins "Scope selection" and "Unscope selection"
+to apply the respective function and replace the selected code.
+}
+\examples{
+scope("1+1")
+scope("tail")
+scope("scope")
+scope(scope)
+
 }
 \seealso{
 Useful links:
@@ -20,4 +33,3 @@ Useful links:
 \strong{Maintainer}: Tyler Grant Smith \email{tyler.grant.smith@gmail.com}
 
 }
-\keyword{internal}

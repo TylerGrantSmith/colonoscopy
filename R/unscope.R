@@ -1,6 +1,6 @@
 #' Remove \code{`::`} and \code{`:::`} operators
 #'
-#' @description TBD
+#' @description Deletes all package access operators.
 #' @param x
 #'
 #' @param ...
@@ -9,8 +9,10 @@
 #'
 #' @examples
 #'
+#' # No changes.
 #' unscope("2+2")
 #'
+#' # Removes "utils::" and "colonoscopy::".
 #' unscope("utils::head(colonoscopy::scope)")
 unscope <- function(x, ...) {
   UseMethod("unscope")
@@ -34,25 +36,18 @@ unscope.character <- function(x) {
 
 #' @export
 #' @keywords internal
-unscope.function <- function(x, ...) {
-  abort("Cannot `unscope` functions.  Use `unscope_function` instead.")
-}
-
-#' Unscope a function
-#'
-#' @export
-unscope_function <- function(f, useSource = T) {
+unscope.function <- function(x, useSource = TRUE, ...) {
   control = c("keepInteger", "keepNA")
 
-  if (is_primitive(f)) {
+  if (is_primitive(x)) {
     return(as.character(substitute(x)))
   }
 
-  if (!is.null(attr(f, "srcref")))
-    return(unscope(attr(f,"srcref")))
+  if (!is.null(attr(x, "srcref")))
+    return(unscope(attr(x,"srcref")))
 
   if (useSource)
     control <- append(control, "useSource")
 
-  unscope(deparse(f, width.cutoff = 59, control = control))
+  unscope(deparse(x, width.cutoff = 59, control = control))
 }

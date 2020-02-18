@@ -47,7 +47,7 @@ scope_selection <- function(envir = caller_env()) {
 
   if(is_null(out)) return()
 
-  context_tracker$replace_in_context(out)
+  context_tracker$replace_in_context(map_depth(out, 2, ~.$text))
 }
 
 #' @importFrom purrr map_depth
@@ -55,11 +55,11 @@ unscope_selection <- function() {
   check_rstudio()
   context_tracker <- ContextTracker$new()
 
-  out <- map_depth(context_tracker$buffer, 2, unscope, envir)
+  out <- map_depth(context_tracker$buffer, 2, unscope)
 
   if(is_null(out)) return()
 
-  context_tracker$replace_in_context(out)
+  context_tracker$replace_in_context(map_depth(out, 2, ~.$text))
 
 }
 

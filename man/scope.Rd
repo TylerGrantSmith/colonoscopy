@@ -5,7 +5,7 @@
 \alias{scope.default}
 \alias{scope.character}
 \alias{scope.function}
-\title{Make explicit package dependencies}
+\title{Make package dependencies explicit}
 \usage{
 scope(x, envir = caller_env(), ...)
 
@@ -13,17 +13,19 @@ scope(x, envir = caller_env(), ...)
 
 \method{scope}{character}(x, envir = caller_env(), ...)
 
-\method{scope}{`function`}(x, ...)
+\method{scope}{`function`}(x, envir = get_env(x) \%||\% caller_env(), useSource = TRUE, ...)
 }
 \arguments{
-\item{x}{An expression to process.  Input is automatically quoted, use !! to unquote if
-you have already captured an expression object.}
+\item{x}{A character vector of parseable code or a function.}
 
-\item{envir}{An environment in which the expression should be evaluated.}
+\item{envir}{An environment in which the expression should be evaluated.
+Defaults to the enclosing environment if \code{x} is a function, otherwise the calling environment.}
+}
+\value{
+Returns a [ParseData] object which prints the modified code.
 }
 \description{
-\code{scope} returns an expression with all symbols resolving to loaded namespaces by
-explicitly adding the namespace access notation.
+Parses the input, and explicitly adds namespace access where appropriate.
 }
 \examples{
 
@@ -35,3 +37,4 @@ scope("a")
 library(colonoscopy)
 scope(scope)
 }
+\keyword{internal}

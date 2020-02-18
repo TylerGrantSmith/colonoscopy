@@ -30,15 +30,15 @@ ContextTracker <- R6::R6Class(
     },
 
     replace_in_context = function(.text) {
-      if(rlang::is_null(.text)) return()
+      if(is_null(.text)) return()
 
       # probably a better way to do this?
-      text <- .text %>% purrr::map(unlist) %>% purrr::map_chr(paste0, collapse = "\n")
+      text <- .text %>% map(unlist) %>% map_chr(paste0, collapse = "\n")
 
-      purrr::map2(ranges,
-                  text,
-                  rstudioapi::insertText,
-                  id = id)
+      map2(ranges,
+           text,
+           rstudioapi::insertText,
+           id = id)
     }
   ),
 
@@ -56,11 +56,11 @@ ContextTracker <- R6::R6Class(
     },
 
     buffer = function() {
-      purrr::map(selection, purrr::pluck, 'text')
+      map(selection, pluck, 'text')
     },
 
     ranges = function() {
-      purrr::map(selection, purrr::pluck, 'range')
+      map(selection, pluck, 'range')
     },
 
     selection = function() {

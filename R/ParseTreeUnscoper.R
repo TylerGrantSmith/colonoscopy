@@ -1,38 +1,27 @@
 ParseTreeUnscoper <- R6::R6Class(
   "ParseTreeUnscoper",
   inherit = ParseTree,
-  portable = FALSE,
 
-  private = list(
-    .imports = NULL  # place to save packed functions
-  ),
+  private = list(),
 
   public = list(
     initialize = function(...) {
       super$initialize(...)
-      unscope()
+      super$set_parse_data_keys(key = c("terminal", "line1", "col1", "line2", "col2"))
+      self$unscope()
     },
 
-    print = function(...) {
-      cat("Unscoped output:\n")
-      super$print()
+    unscope = function() {
+      colon_rows <- which(private$pd$token %in% c("NS_GET", "NS_GET_INT"))
+
+      if (length(colon_rows)==0) {
+        return()
+      }
+
+      package_rows <- colon_rows - 1
+      name_rows <- colon_rows + 1
+
+      private$pd[c(package_rows, colon_rows), text := ""]
     }
   )
-)
-
-ParseTreeUnscoper$set(
-  "public",
-  "unscope",
-  function(add_roxygen = FALSE) {
-    colon_rows <- which(parse_data_full$token %in% c("NS_GET", "NS_GET_INT"))
-
-    if (length(colon_rows)==0) {
-      return()
-    }
-
-    package_rows <- colon_rows - 1
-
-    parse_data_full[c(package_rows, colon_rows), text := ""]
-    browser()
-  }
 )

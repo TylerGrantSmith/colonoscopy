@@ -30,3 +30,9 @@ getNamespaceExportsAndLazyData <- function(ns) {
     c(names(.getNamespaceInfo(ns, "exports")),
       names(.getNamespaceInfo(ns, "lazydata")))
 }
+
+#' @importFrom rlang with_bindings eval_bare
+with_self_bindings <- function(...) {
+  self <- get("self", caller_env())
+  with_bindings(..., .env = self$.__enclos_env__$self)
+}

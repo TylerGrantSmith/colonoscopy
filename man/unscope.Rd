@@ -12,11 +12,13 @@ unscope(x, ...)
 \item{...}{}
 }
 \description{
-TBD
+Deletes all package access operators.
 }
 \examples{
 
+# No changes.
 unscope("2+2")
 
+# Removes "utils::" and "colonoscopy::".
 unscope("utils::head(colonoscopy::scope)")
 }
