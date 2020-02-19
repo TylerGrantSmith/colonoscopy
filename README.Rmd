@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# packr
+# colonoscopy
 
 <!-- badges: start -->
 [![Travis build status](https://travis-ci.org/TylerGrantSmith/packr.svg?branch=master)](https://travis-ci.org/TylerGrantSmith/packr)
@@ -21,20 +21,20 @@ knitr::opts_chunk$set(
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
 <!-- badges: end -->
 
-`packr` provides functions and RStudio addins to easily add or remove explicit package scoping (`::`, `:::`)
+`colonoscopy` provides functions and RStudio addins to easily add or remove explicit package scoping (`::`, `:::`)
 
 ## Installation
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("TylerGrantSmith/packr")
+devtools::install_github("TylerGrantSmith/colonoscopy")
 ```
 ## Example
 
-`unpack` will modify expressions by appending explicit package references.
-```{r unpack_example}
-library(packr)
-unpack(unpack)
+`colonoscopy` will modify expressions by appending explicit package references.
+```{r unscope_example}
+library(colonoscopy)
+scope(scope)
 ```
 `unpack_function` will make explicit functions imported from other packages and non-exported functions from the package itself.
 
