@@ -96,27 +96,30 @@ ParseTreeScoper$set(
       return()
     }
 
-    assign_row <- which(assign_filter)
+    assign_rows <- which(assign_filter)
+    offsets <- ifelse(private$parse_data_filtered$token[assign_rows] == "RIGHT_ASSIGN", 1L, -1L)
+    is_double_arrow <- private$parse_data_filtered$text[assign_rows] %in% c("<<-", "->>")
+    assigned_rows <- assign_rows + offsets
+    assigned_ids <- private$parse_data_filtered$id[assigned_rows]
+    assigned_pds <- map(assigned_ids + 1, ~private$cache[[.x]])
 
-    offset <- ifelse(private$parse_data_filtered$token[assign_row] == "RIGHT_ASSIGN", 1L, -1L)
+    assign_symbol <- function (pd, id, is_double_arrow) {
+      if (identical(pd$token, "SYMBOL")) {
+        nm <- pd$text[1]
 
-    assigned_row <- assign_row + offset
+        # Hacky non-accurate workaround for double arrow assignment
+        if (is_double_arrow) {
+          env <- env_parent(self$envir)
+        } else {
+          env <- self$envir
+        }
 
-    assigned_id <- private$parse_data_filtered$id[assigned_row]
-
-    sub_pt <- private$cache[[assigned_id + 1]]
-
-    if (identical(sub_pt$token, "SYMBOL")) {
-
-      env <- self$envir
-      nm  <- sub_pt$text[1]
-
-      # Hacky non-accurate workaround for double arrow assignment
-      if (private$parse_data_filtered$text[assign_row] %in% c('<<-', '->>') )
-        env <- env_parent(env)
-
-      env_bind(.env = env, !!nm := assigned_id)
+        env_bind(.env = env, !!nm := id)
+      }
     }
+
+    pmap(list(assigned_pds, assigned_ids, is_double_arrow), assign_symbol)
+
   }
 )
 
