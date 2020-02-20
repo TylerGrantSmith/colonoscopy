@@ -18,5 +18,5 @@
 #' @importFrom rlang is_environment is_function is_installed is_null is_primitive
 #' @importFrom rlang "%||%" abort base_env new_environment rep_named warn with_handlers
 #' @importFrom data.table ":=" as.data.table rbindlist set setkeyv setindexv shift "%chin%"
-#' @importFrom purrr map map_chr map2 map2_chr pluck
+#' @importFrom purrr map map_chr map2 map2_chr pmap pluck
 "_PACKAGE"
