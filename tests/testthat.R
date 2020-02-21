@@ -1,4 +1,4 @@
 library(testthat)
-library(packr)
+library(colonoscopy)
 
-test_check("packr")
+test_check("colonoscopy")

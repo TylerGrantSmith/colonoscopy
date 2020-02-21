@@ -127,7 +127,6 @@ ParseTreeScoper$set(
   "private",
   "scope_formals",
   function() {
-
     # drop the body expression.  should be the last one always...?
     pl <- head(private$parse_data_filtered, -1)
 
@@ -144,6 +143,12 @@ ParseTreeScoper$set(
     unbound_fml_nms <- setdiff(pl[token == "SYMBOL_FORMALS", text], bound_fml_nms)
     fmls <- rep_named(unbound_fml_nms, list(NULL))
     env_bind(self$envir, !!!fmls)
+
+    expr_ids <- pl$id[pl$token == "expr"]
+
+    for (id in expr_ids) {
+      private$recursive_scope(id)
+    }
   }
 )
 

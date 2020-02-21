@@ -7,18 +7,10 @@
 unscope(x, ...)
 }
 \arguments{
-\item{x}{}
+\item{x}{A character vector of parseable R code, or a function.}
 
-\item{...}{}
+\item{...}{Optional arguments when x is a function.}
 }
 \description{
 Deletes all package access operators.
-}
-\examples{
-
-# No changes.
-unscope("2+2")
-
-# Removes "utils::" and "colonoscopy::".
-unscope("utils::head(colonoscopy::scope)")
 }

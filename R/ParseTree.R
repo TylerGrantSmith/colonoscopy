@@ -4,6 +4,7 @@ ParseTree <- R6::R6Class(
 
   private = list(
     # ---- Private Fields ----
+    .text = NULL,
     header = '',
     footer = '',
     pd = NULL,
@@ -58,10 +59,14 @@ ParseTree <- R6::R6Class(
     # ---- Public Methods ----
 
     initialize = function(text, ...) {
+      if (is_null(text))
+        abort("ParseData cannot be initialized with NULL.")
 
-      private$header <- self$get_header(text)
-      private$footer <- self$get_footer(text)
-      private$pd     <- self$get_parse_data(text = text, ...)
+      private$.text  <- text
+
+      private$header <- extract_header(text)
+      private$footer <- extract_footer(text)
+      private$pd     <- get_parse_data(text = text, ...)
 
       self$set_parse_data_keys()
       private$cache_parse_data()
@@ -76,53 +81,9 @@ ParseTree <- R6::R6Class(
       invisible(self)
     },
 
-    parse_safely = function(text, ...) {
-      parsed <- with_handlers(
-        parse(text = text, ...),
-        error = function(e) e,
-        warning = function(w) w
-      )
-
-      if (inherits(parsed, "error")) {
-        abort(parsed$message)
-      } else if (inherits(parsed, "warning")) {
-        warn(parsed$message)
-      }
-
-      parsed
-    },
-
-    get_parse_data = function(text, ...) {
-      parsed <- self$parse_safely(text, ...)
-
-      pd <-
-        parsed %>%
-        utils::getParseData() %>%
-        as.data.table() %>%
-        self$add_root_row()
-
-      pd
-    },
-
-    add_root_row = function(pd) {
-      rbindlist(list(pd, list(terminal = FALSE,
-                              id = 0,
-                              parent = -Inf,
-                              text = "")),
-                fill = TRUE)
-    },
-
-    get_header = function(x) {
-      regmatches(x, regexec("^\\s+", x))[[1]]
-    },
-
-    get_footer = function(x) {
-      regmatches(x, regexec("\\s+$", x))[[1]]
-    },
-
-    set_parse_data_keys = function(index = "id", key = c("line1", "col1", "line2", "col2")) {
+    set_parse_data_keys = function(index = "id", keys = c("line1", "col1", "line2", "col2")) {
       setindexv(private$pd, index)
-      setkeyv(private$pd, key)
+      setkeyv(private$pd, keys)
     }
 
   ),
@@ -156,6 +117,6 @@ ParseTree <- R6::R6Class(
   )
 )
 
-as.character.ParseTree <- function(x) {
-  a$text
+as.character.ParseTree <- function(pt) {
+  pt$text
 }

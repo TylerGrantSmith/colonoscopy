@@ -15,6 +15,6 @@ test_that("get_pkg_name", {
 })
 
 test_that("is_exported", {
-  expect_true (is_exported ("pack",       getNamespace("packr")))
-  expect_false(is_exported("is_exported", getNamespace("packr")))
+  expect_true (is_exported("adist",    getNamespace("utils")))
+  expect_false(is_exported("argNames", getNamespace("utils")))
 })

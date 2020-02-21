@@ -1,5 +1,5 @@
 Package: colonoscopy
-Title: Tools for adding and removing namespace access colonoperators, `::` and `:::`.
+Title: Tools for adding and removing namespace access colonoperators, `::` and `:::`
 Version: 0.1.0
 Authors@R: 
     person(given = "Tyler Grant",

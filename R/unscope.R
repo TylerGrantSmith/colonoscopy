@@ -1,27 +1,18 @@
 #' Remove \code{`::`} and \code{`:::`} operators
 #'
 #' @description Deletes all package access operators.
-#' @param x
+#' @param x A character vector of parseable R code, or a function.
 #'
-#' @param ...
+#' @param ... Optional arguments when x is a function.
 #'
 #' @export
-#'
-#' @examples
-#'
-#' # No changes.
-#' unscope("2+2")
-#'
-#' # Removes "utils::" and "colonoscopy::".
-#' unscope("utils::head(colonoscopy::scope)")
 unscope <- function(x, ...) {
   UseMethod("unscope")
 }
 
-
 #' @export
 #' @keywords internal
-unscope.default <- function(x) {
+unscope.default <- function(x, ...) {
   tryCatch(x <- as.character(x),
            error = function(e)
              abort("Unable to convert `x` to a character."))
@@ -30,7 +21,7 @@ unscope.default <- function(x) {
 
 #' @export
 #' @keywords internal
-unscope.character <- function(x) {
+unscope.character <- function(x, ...) {
   ParseTreeUnscoper$new(text = x)
 }
 
