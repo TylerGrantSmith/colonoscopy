@@ -50,7 +50,6 @@ parse_safely <- function(text, ...) {
   } else if (inherits(parsed, "warning")) {
     warn(parsed$message)
   }
-
   parsed
 }
 
@@ -61,12 +60,13 @@ add_root_row <- function(pd) {
                           parent = -Inf,
                           text = "")),
             fill = TRUE)
+
 }
 
 #' @importFrom data.table as.data.table
 get_parse_data <- function(text, ...) {
-  parse_safely(text, ...) %>%
-    utils::getParseData() %>%
+  parse_safely(text, ..., keep.source = TRUE) %>%
+    getParseData() %>%
     as.data.table() %>%
     add_root_row()
 }
