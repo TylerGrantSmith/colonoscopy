@@ -2,18 +2,9 @@ get_obj_env <- function(x, env) {
   environment(get0(x, env))
 }
 
-get_pkg_name <- function(env) {
-  if(is_null(env)) return(NULL)
-
-  en <- env_name(env)
-
-  if (grepl("^package:", en))
-    return(sub("^package:", "", en))
-
-  if (grepl("^namespace:", en))
-    return(sub("^namespace:", "", en))
-
-  return(NULL)
+find_pkg_name <- function(nm, env) {
+  enclos <- environment(get(nm, env))
+  enclos$.packageName %||% ""
 }
 
 is_exported <- function(x, ns) {
@@ -66,7 +57,7 @@ add_root_row <- function(pd) {
 #' @importFrom data.table as.data.table
 get_parse_data <- function(text, ...) {
   parse_safely(text, ..., keep.source = TRUE) %>%
-    getParseData() %>%
+    utils::getParseData() %>%
     as.data.table() %>%
     add_root_row()
 }

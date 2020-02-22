@@ -45,12 +45,16 @@ ParseTreeScoper$set(
   "private",
   "scope_exprs",
   function() {
-    # need to ignore symbols preceded by $, `::` and `:::`
     skip_ids <- integer()
-    if (any(private$parse_data_filtered$token %in% c("NS_GET", "NS_GET_INT", "'$'"))) {
+    if (any(private$parse_data_filtered$token %in% c("NS_GET", "NS_GET_INT", "'$'",  "RIGHT_ASSIGN", "LEFT_ASSIGN","EQ_ASSIGN"))) {
       for (.id in self$ids) {
-        if (private$parse_data_filtered[,.(id, pt = shift(token, 1L, '', "lag"))][id == .id, pt] %in% c("NS_GET", "NS_GET_INT", "'$'")) {
+        if (private$parse_data_filtered[,.(id, pt = shift(token, 1L, '', "lag"))][id == .id, pt] %in% c("NS_GET", "NS_GET_INT", "'$'","RIGHT_ASSIGN")) {
           skip_ids <- append(skip_ids, .id)
+          next
+        }
+        if (private$parse_data_filtered[,.(id, pt = shift(token, 1L, '', "lead"))][id == .id, pt] %in% c("LEFT_ASSIGN", "EQ_ASSIGN")) {
+          skip_ids <- append(skip_ids, .id)
+          next
         }
       }
     }
@@ -95,7 +99,6 @@ ParseTreeScoper$set(
     if (!any(assign_filter)) {
       return()
     }
-
     assign_rows <- which(assign_filter)
     offsets <- ifelse(private$parse_data_filtered$token[assign_rows] == "RIGHT_ASSIGN", 1L, -1L)
     is_double_arrow <- private$parse_data_filtered$text[assign_rows] %in% c("<<-", "->>")
@@ -193,34 +196,29 @@ ParseTreeScoper$set(
   "private",
   "scope_symbol",
   function(x) {
-    x_c   <- as.character(x)
-    x_env <- tryCatch(where(x_c, self$envir), error = function(e) NULL)
+    nm   <- as.character(x)
+    where_env <- tryCatch(where(nm, self$envir), error = function(e) NULL)
+    if(is_null(where_env)) { return(x) }
 
-    if(is_null(x_env)) { return(x) }
-
-    if(grepl("^imports:", env_name(x_env)))  {
-      x_env <- get_obj_env(x_c, x_env)
-    }
-
-    pkg_name <- get_pkg_name(x_env) %||% ""
+    pkg_name <- find_pkg_name(nm, where_env)
 
     if (pkg_name == "base") { return(x) }
 
     if (pkg_name == "") {
-      y <- get(x_c, x_env)
+      y <- get(nm, where_env)
 
       # mark lazy data for scope-ing
       if (inherits(y, "lazy_scope")) {
-        class(x_env[[x_c]]) <- "scope"
+        class(where_env[[nm]]) <- "scope"
       }
 
       return(x)
     }
 
-    if (is_exported(x_c, pkg_name)) {
-      paste0(pkg_name, "::", x_c)
+    if (is_exported(nm, pkg_name)) {
+      paste0(pkg_name, "::", nm)
     } else {
-      paste0(pkg_name, ":::", x_c)
+      paste0(pkg_name, ":::", nm)
     }
   }
 )

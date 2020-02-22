@@ -1,17 +1,11 @@
 context("utils")
 
-test_that("get_pkg_name", {
-
-  expect_null(get_pkg_name(NULL))
-  expect_null(get_pkg_name(.GlobalEnv))
+test_that("find_pkg_name", {
 
   test_env <- new.env()
 
-  attr(test_env, 'name') <- "package:test"
-  expect_identical(get_pkg_name(test_env), "test")
-
-  attr(test_env, 'name') <- "namespace:test"
-  expect_identical(get_pkg_name(test_env), "test")
+  expect_identical(find_pkg_name("scope", rlang::ns_env("colonoscopy")), "colonoscopy")
+  expect_identical(find_pkg_name("is_null", rlang::ns_env("colonoscopy")), "rlang")
 })
 
 test_that("is_exported", {
