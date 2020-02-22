@@ -16,8 +16,8 @@ knitr::opts_chunk$set(
 # colonoscopy
 
 <!-- badges: start -->
-[![Travis build status](https://travis-ci.org/TylerGrantSmith/packr.svg?branch=master)](https://travis-ci.org/TylerGrantSmith/packr)
-[![Codecov test coverage](https://codecov.io/gh/TylerGrantSmith/packr/branch/master/graph/badge.svg)](https://codecov.io/gh/TylerGrantSmith/packr?branch=master)
+[![Travis build status](https://travis-ci.org/TylerGrantSmith/colonoscopy.svg?branch=master)](https://travis-ci.org/TylerGrantSmith/colonoscopy)
+[![Codecov test coverage](https://codecov.io/gh/TylerGrantSmith/colonoscopy/branch/master/graph/badge.svg)](https://codecov.io/gh/TylerGrantSmith/colonoscopy?branch=master)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
 <!-- badges: end -->
 
@@ -31,15 +31,18 @@ devtools::install_github("TylerGrantSmith/colonoscopy")
 ```
 ## Example
 
-`colonoscopy` will modify expressions by appending explicit package references.
+`scope` will modify expressions or functions by appending explicit package references.
 ```{r unscope_example}
 library(colonoscopy)
-scope(scope)
+library(ggplot2)
+scope("aes")
+aes
+scope(aes)
 ```
-`unpack_function` will make explicit functions imported from other packages and non-exported functions from the package itself.
+`unscope` will modify expressions or functions by removing `::` and `:::` operators (and the package name).
 
 ```{r unpack_function_example}
-library(packr)
-unpack
-unpack_function(unpack)
+unscope("ggplot2::alpha")
+alpha
+unscope(alpha)
 ```
