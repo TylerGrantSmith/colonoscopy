@@ -14,6 +14,7 @@ ParseTree <- R6::R6Class(
     cache = list(),
     text_env = NULL,
     .envir = NULL,
+    .envir_initial = NULL,
 
     # ---- Private Methods ----
     cache_parse_data = function() {
@@ -96,6 +97,7 @@ ParseTree <- R6::R6Class(
       if (missing(value)) {
         return(private$.envir)
       }
+      private$.envir_initial <- private$.envir_initial %||% value
       private$.envir <- value
     },
 

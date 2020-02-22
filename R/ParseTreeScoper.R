@@ -167,7 +167,6 @@ ParseTreeScoper$set(
   "private",
   "scope_function",
   function() {
-
     enclos <- new_environment(parent = self$envir)
 
     with_self_bindings(
@@ -198,7 +197,9 @@ ParseTreeScoper$set(
   function(x) {
     nm   <- as.character(x)
     where_env <- tryCatch(where(nm, self$envir), error = function(e) NULL)
-    if(is_null(where_env)) { return(x) }
+
+    if (identical(where_env, private$.envir_initial)) { return(x) }
+    if (is_null(where_env)) { return(x) }
 
     pkg_name <- find_pkg_name(nm, where_env)
 

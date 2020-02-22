@@ -1,9 +1,18 @@
 test_that(
   "scope exported names",
   {
-      expect_identical(scope("unscope")$text, "colonoscopy::unscope")
+    expect_identical(scope("unscope")$text, "colonoscopy::unscope")
   }
 )
+
+test_that("scope.function works",
+          {
+            expect_identical(scope(utils::alarm)$text,
+                             "function ()\n{\n    cat(\"\\a\")\n    flush.console()\n}")
+            expect_identical(scope(deparse(utils::alarm))$text,
+                             "function ()\n{\n    cat(\"\\a\")\n    utils::flush.console()\n}")
+
+          })
 
 test_that(
   "scope functions",
