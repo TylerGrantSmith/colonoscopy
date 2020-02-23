@@ -12,3 +12,15 @@ test_that("is_exported", {
   expect_true (is_exported("adist",    getNamespace("utils")))
   expect_false(is_exported("argNames", getNamespace("utils")))
 })
+
+test_that("extract_footer works with all nonspace characters", {
+  expect_identical(extract_footer("a\n"), "\n")
+  expect_identical(extract_footer("}\n"), "\n")
+  expect_identical(extract_footer("#\n"), "\n")
+})
+
+test_that("extract_header works with all nonspace characters", {
+  expect_identical(extract_header("\na"), "\n")
+  expect_identical(extract_header("\n{"), "\n")
+  expect_identical(extract_header("\n#"), "\n")
+})

@@ -43,7 +43,7 @@ scope.character <- function(x, envir = caller_env(), ...) {
     abort("`envir`` must be an environment")
   }
 
-  ParseTreeScoper$new(text = x, envir = envir)
+  ParseTreeScoper$new(text = paste0(x, collapse = "\n"), envir = envir)
 }
 
 #' @rdname scope

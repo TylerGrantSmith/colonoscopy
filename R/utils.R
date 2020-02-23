@@ -67,5 +67,5 @@ extract_header <- function(x) {
 }
 
 extract_footer <- function(x) {
-  regmatches(x, regexpr("(?<=\\w)\\s*$", x, perl = TRUE))
+  regmatches(x, regexpr("(?<=\\S)\\s*$", x, perl = TRUE))
 }
