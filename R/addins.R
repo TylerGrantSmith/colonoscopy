@@ -52,7 +52,12 @@ scope_selection <- function(envir = caller_env()) {
 
 #' @importFrom purrr map_depth
 unscope_selection <- function() {
-  check_rstudio()
+  if(!check_rstudio()) {
+    abort(paste(
+      "Either `rstudioapi` is missing or you are attempting",
+      "to run this function from outside RStudio."))
+  }
+
   context_tracker <- ContextTracker$new()
 
   out <- map_depth(context_tracker$buffer, 2, unscope)
