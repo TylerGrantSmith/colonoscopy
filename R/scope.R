@@ -29,10 +29,14 @@ scope <- function(x, envir = caller_env(), ...) {
 #' @export
 #' @keywords internal
 scope.default <- function(x, envir = caller_env(), ...) {
-  tryCatch(x <- as.character(x),
-           error = function(e) abort("Unable to convert x to a character"))
+  if (is_function(x))
+    scope.function(unclass(x))
+  else {
+    tryCatch(x <- as.character(x),
+             error = function(e) abort("Unable to convert x to a character"))
 
-  scope.character(x, envir)
+    scope.character(x, envir)
+  }
 }
 
 #' @rdname scope

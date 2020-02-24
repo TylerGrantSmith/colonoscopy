@@ -21,6 +21,13 @@ test_that("scope.function works", {
 
 })
 
+test_that("scope properly handles closures not classed as functions", {
+  f <- function() "closure"
+  class(f) <- "not_a_function_anymore"
+
+  expect_identical(scope(f)$text, "function() \"closure\"")
+})
+
 test_that("scope functions",
   expect_identical(
     with_mock(`colonoscopy::unscope` = function() head, scope(unscope)$text),
