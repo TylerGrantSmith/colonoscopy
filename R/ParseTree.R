@@ -93,6 +93,10 @@ ParseTree <- R6::R6Class(
 
     # ---- Active Fields ----
 
+    parse_data = function() {
+      private$pd
+    },
+
     envir = function(value) {
       if (missing(value)) {
         return(private$.envir)
