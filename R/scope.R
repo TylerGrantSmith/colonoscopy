@@ -7,7 +7,7 @@
 #' @param envir An environment in which the expression should be evaluated.
 #' Defaults to the enclosing environment if \code{x} is a function, otherwise the calling environment.
 #'
-#' @return Returns a [ParseData] object which prints the modified code.
+#' @return Returns a [ParseTreeScoper] object which prints the modified code.
 #'
 #' @examples
 #'
@@ -20,23 +20,31 @@
 #' scope(scope)
 #' @export
 scope <- function(x, envir = caller_env(), ...) {
-    if (is_null(x))
-      abort("`x` cannot be NULL.")
-    UseMethod("scope")
+  # if (is_null(x))
+  #   abort("`x` cannot be NULL.")
+  UseMethod("scope")
 }
 
 #' @rdname scope
 #' @export
 #' @keywords internal
 scope.default <- function(x, envir = caller_env(), ...) {
-  if (is_function(x))
-    scope.function(unclass(x))
-  else {
-    tryCatch(x <- as.character(x),
-             error = function(e) abort("Unable to convert x to a character"))
-
-    scope.character(x, envir)
+  if (!is_environment(envir)) {
+    abort("`envir`` must be an environment")
   }
+
+  if (is_null(x)) {
+    abort("`x` cannot be NULL.")
+  }
+
+  if (is_function(x)) {
+    return(scope.function(unclass(x)))
+  }
+
+  tryCatch(x <- as.character(x),
+           error = function(e) abort("Unable to convert x to a character"))
+
+  scope(x, envir)
 }
 
 #' @rdname scope
@@ -53,7 +61,15 @@ scope.character <- function(x, envir = caller_env(), ...) {
 #' @rdname scope
 #' @export
 #' @keywords internal
-scope.function <- function(x, envir = get_env(x) %||% caller_env(), useSource = TRUE,...) {
+scope.function <- function(x,
+                           envir = get_env(x) %||% caller_env(),
+                           useSource = TRUE,
+                           inPackage = TRUE, ...) {
+
+  if (!inPackage) {
+    envir = child_env(envir)
+  }
+
   control = c("keepInteger", "keepNA")
 
   if (!is_null(attr(x, "srcref")))

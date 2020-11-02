@@ -2,9 +2,40 @@ get_obj_env <- function(x, env) {
   environment(get0(x, env))
 }
 
+find_nm_in_imports <- function(nm, env) {
+  imports <- collapse_ns_imports(env)
+  pkg <- imports %>% dplyr::filter(value == nm) %>% dplyr::pull(name)
+  if (length(pkg))
+    pkg
+  else
+    NULL
+}
+
+collapse_ns_imports <- function(ns) {
+  imports <- ns$.__NAMESPACE__.$imports
+
+  c(purrr::discard(imports, is.list) %>% purrr::map_chr(unname),
+    purrr::keep(imports, is.list) %>%
+      purrr::map(~purrr::set_names(.[2], .[1])) %>%
+      purrr::flatten()) %>%
+    tibble::enframe() %>%
+    tidyr::unnest(value) %>%
+    dplyr::distinct()
+}
+
 find_pkg_name <- function(nm, env) {
-  enclos <- environment(get(nm, env))
-  enclos$.packageName %||% ""
+  if (isBaseNamespace(env))
+    return("base")
+
+  x <- get(nm, env)
+
+  if (inherits(x, "lazy_scope") || is.null(x)) {
+    return(NULL)
+  }
+
+  .getNamespaceInfo(environment(x), "spec")[["name"]] %||%
+    find_nm_in_imports(nm, env) %||%
+    tryCatch(rlang::ns_env_name(env), error = function(e) "")
 }
 
 is_exported <- function(x, ns) {

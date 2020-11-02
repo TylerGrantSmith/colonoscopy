@@ -13,7 +13,13 @@ scope(x, envir = caller_env(), ...)
 
 \method{scope}{character}(x, envir = caller_env(), ...)
 
-\method{scope}{`function`}(x, envir = get_env(x) \%||\% caller_env(), useSource = TRUE, ...)
+\method{scope}{`function`}(
+  x,
+  envir = get_env(x) \%||\% caller_env(),
+  useSource = TRUE,
+  inPackage = TRUE,
+  ...
+)
 }
 \arguments{
 \item{x}{A character vector of parseable code or a function.}
@@ -22,7 +28,7 @@ scope(x, envir = caller_env(), ...)
 Defaults to the enclosing environment if \code{x} is a function, otherwise the calling environment.}
 }
 \value{
-Returns a [ParseData] object which prints the modified code.
+Returns a [ParseTreeScoper] object which prints the modified code.
 }
 \description{
 Parses the input, and explicitly adds namespace access where appropriate.

@@ -6,16 +6,16 @@ ParseTreeScoper <- R6::R6Class(
     initialize = function(..., envir = NULL) {
       super$initialize(...)
       self$envir <- envir
-      self$scope()
+      private$recursive_scope(0L)
     }
   )
 )
 
 ParseTreeScoper$set(
-  "public",
-  "scope",
-  function() {
-    private$recursive_scope(0L)
+  "private",
+  "recursive_scope",
+  function(root) {
+    with_self_bindings(private$scope_all(), root = root)
   }
 )
 
@@ -32,12 +32,17 @@ ParseTreeScoper$set(
     }
   }
 )
-
 ParseTreeScoper$set(
   "private",
-  "recursive_scope",
-  function(new_root) {
-    with_self_bindings(private$scope_all(), root = new_root)
+  "scope_symbs",
+  function(skip_ids) {
+    sym_ids <- private$parse_data_filtered$id[private$parse_data_filtered$token %chin% self$symbol_tokens]
+    sym_ids <- setdiff(sym_ids, skip_ids)
+
+    for (id in sym_ids) {
+      private$scope_symb(id)
+    }
+
   }
 )
 
@@ -59,12 +64,7 @@ ParseTreeScoper$set(
       }
     }
 
-    sym_ids <- private$parse_data_filtered$id[private$parse_data_filtered$token %chin% self$symbol_tokens]
-    sym_ids <- setdiff(sym_ids, skip_ids)
-
-    for (id in sym_ids) {
-      private$scope_symb(id)
-    }
+    private$scope_symbs(skip_ids)
 
     expr_ids <- private$parse_data_filtered$id[private$parse_data_filtered$terminal == FALSE]
     expr_ids <- setdiff(expr_ids, skip_ids)
@@ -177,7 +177,7 @@ ParseTreeScoper$set(
         private$scope_body()
 
         el <- as.list(enclos)
-        scope_el <- which(vapply(el, function(x) inherits(x, "scope"),logical(1)))
+        scope_el <- which(vapply(el, inherits, FALSE, "scope"))
         while(length(scope_el) > 0) {
           for(i in scope_el) {
             private$recursive_scope(el[[i]])
@@ -195,17 +195,15 @@ ParseTreeScoper$set(
   "private",
   "scope_symbol",
   function(x) {
-    nm   <- as.character(x)
+    nm <- as.character(x)
     where_env <- tryCatch(where(nm, self$envir), error = function(e) NULL)
-
     if (identical(where_env, private$.envir_initial)) { return(x) }
     if (is_null(where_env)) { return(x) }
 
     pkg_name <- find_pkg_name(nm, where_env)
 
-    if (pkg_name == "base") { return(x) }
 
-    if (pkg_name == "") {
+    if (is.null(pkg_name)) {
       y <- get(nm, where_env)
 
       # mark lazy data for scope-ing
@@ -215,6 +213,8 @@ ParseTreeScoper$set(
 
       return(x)
     }
+
+    if (pkg_name == "base") { return(x) }
 
     if (is_exported(nm, pkg_name)) {
       paste0(pkg_name, "::", nm)
