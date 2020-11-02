@@ -104,7 +104,7 @@ ParseTreeScoper$set(
     is_double_arrow <- private$parse_data_filtered$text[assign_rows] %in% c("<<-", "->>")
     assigned_rows <- assign_rows + offsets
     assigned_ids <- private$parse_data_filtered$id[assigned_rows]
-    assigned_pds <- map(assigned_ids + 1, ~private$cache[[.x]])
+    assigned_pds <- private$cache[assigned_ids + 1]
 
     assign_symbol <- function (pd, id, is_double_arrow) {
       if (identical(pd$token, "SYMBOL")) {
@@ -184,7 +184,7 @@ ParseTreeScoper$set(
             class(enclos[[names(el)[[i]]]]) <- "scoped"
           }
           el <- as.list(enclos)
-          scope_el <- which(vapply(el, function(x) inherits(x, "scope"),logical(1)))
+          scope_el <- which(vapply(el, inherits, FALSE, "scope"))
         }
       }
     )
@@ -197,16 +197,20 @@ ParseTreeScoper$set(
   function(x) {
     nm <- as.character(x)
     where_env <- tryCatch(where(nm, self$envir), error = function(e) NULL)
-    if (identical(where_env, private$.envir_initial)) { return(x) }
-    if (is_null(where_env)) { return(x) }
+
+    if (is_null(where_env)) {
+      return(x)
+    }
+
+    if (identical(where_env, private$.envir_initial)) {
+      return(x)
+    }
 
     pkg_name <- find_pkg_name(nm, where_env)
 
-
-    if (is.null(pkg_name)) {
+    if (is_null(pkg_name)) {
       y <- get(nm, where_env)
 
-      # mark lazy data for scope-ing
       if (inherits(y, "lazy_scope")) {
         class(where_env[[nm]]) <- "scope"
       }
