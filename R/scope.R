@@ -20,8 +20,6 @@
 #' scope(scope)
 #' @export
 scope <- function(x, envir = caller_env(), ...) {
-  # if (is_null(x))
-  #   abort("`x` cannot be NULL.")
   UseMethod("scope")
 }
 
