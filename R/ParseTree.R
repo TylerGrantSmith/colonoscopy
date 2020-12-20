@@ -11,6 +11,7 @@ ParseTree <- R6::R6Class(
     parse_data_filtered = NULL,
 
     root_id = NULL,
+    visited_ids = NULL,
     cache = list(),
     text_env = NULL,
     .envir = NULL,

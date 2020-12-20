@@ -6,6 +6,7 @@ ParseTreeScoper <- R6::R6Class(
     initialize = function(..., envir = NULL) {
       super$initialize(...)
       self$envir <- envir
+      private$visited_ids <- environment()
       private$recursive_scope(0L)
     }
   )
@@ -23,13 +24,17 @@ ParseTreeScoper$set(
   "private",
   "scope_all",
   function() {
-    private$scope_assignment()
+    root_sym <- as.character(private$root_id)
+
+    if (get0(root_sym, private$visited_ids) %||% FALSE)
+      return()
 
     if (any(private$parse_data_filtered$token == "FUNCTION")) {
       private$scope_function()
     } else {
       private$scope_exprs()
     }
+    assign(root_sym, TRUE, envir = private$visited_ids)
   }
 )
 ParseTreeScoper$set(
@@ -51,6 +56,7 @@ ParseTreeScoper$set(
   "scope_exprs",
   function() {
     skip_ids <- integer()
+    # browser()
     if (any(private$parse_data_filtered$token %in% c("NS_GET", "NS_GET_INT", "'$'",  "RIGHT_ASSIGN", "LEFT_ASSIGN","EQ_ASSIGN"))) {
       for (.id in self$ids) {
         if (private$parse_data_filtered[,.(id, pt = shift(token, 1L, '', "lag"))][id == .id, pt] %in% c("NS_GET", "NS_GET_INT", "'$'","RIGHT_ASSIGN")) {
@@ -58,15 +64,18 @@ ParseTreeScoper$set(
           next
         }
         if (private$parse_data_filtered[,.(id, pt = shift(token, 1L, '', "lead"))][id == .id, pt] %in% c("LEFT_ASSIGN", "EQ_ASSIGN")) {
+          private$scope_assignment()
+          private$recursive_scope(.id)
           skip_ids <- append(skip_ids, .id)
           next
         }
       }
     }
 
-    private$scope_symbs(skip_ids)
+    terminals <- private$parse_data_filtered$terminal == TRUE
 
-    expr_ids <- private$parse_data_filtered$id[private$parse_data_filtered$terminal == FALSE]
+    private$scope_symbs(skip_ids)
+    expr_ids <- private$parse_data_filtered$id[!terminals]
     expr_ids <- setdiff(expr_ids, skip_ids)
 
     for (id in expr_ids) {
@@ -94,21 +103,26 @@ ParseTreeScoper$set(
   "private",
   "scope_assignment",
   function() {
-    assign_filter <- private$parse_data_filtered$token %in% c("LEFT_ASSIGN", "RIGHT_ASSIGN", "EQ_ASSIGN")
-
+    assign_filter <- private$parse_data_filtered$token %in% c("LEFT_ASSIGN",
+                                                              "RIGHT_ASSIGN",
+                                                              "EQ_ASSIGN")
     if (!any(assign_filter)) {
       return()
     }
     assign_rows <- which(assign_filter)
-    offsets <- ifelse(private$parse_data_filtered$token[assign_rows] == "RIGHT_ASSIGN", 1L, -1L)
+    offsets <- 2L*(private$parse_data_filtered$token[assign_rows] == "RIGHT_ASSIGN") - 1L
     is_double_arrow <- private$parse_data_filtered$text[assign_rows] %in% c("<<-", "->>")
     assigned_rows <- assign_rows + offsets
     assigned_ids <- private$parse_data_filtered$id[assigned_rows]
     assigned_pds <- private$cache[assigned_ids + 1]
 
+    unassigned_rows <- assign_rows - offsets
+    unassigned_ids <- private$parse_data_filtered$id[unassigned_rows]
+    unassigned_pds <- private$cache[unassigned_ids + 1]
+
     assign_symbol <- function (pd, id, is_double_arrow) {
       if (identical(pd$token, "SYMBOL")) {
-        nm <- pd$text[1]
+        nm <- pd$text[[1]]
 
         # Hacky non-accurate workaround for double arrow assignment
         if (is_double_arrow) {
@@ -117,12 +131,16 @@ ParseTreeScoper$set(
           env <- self$envir
         }
 
+        class(id) <- "scoped"
+
         env_bind(.env = env, !!nm := id)
       }
     }
 
-    pmap(list(assigned_pds, assigned_ids, is_double_arrow), assign_symbol)
+    walk(unassigned_ids, private$recursive_scope)
+    pwalk(list(assigned_pds, assigned_ids, is_double_arrow), assign_symbol)
 
+    # unassigned_ids
   }
 )
 
@@ -167,7 +185,7 @@ ParseTreeScoper$set(
   "private",
   "scope_function",
   function() {
-    enclos <- new_environment(parent = self$envir)
+    enclos <- child_env(self$envir)
 
     with_self_bindings(
       envir = enclos,

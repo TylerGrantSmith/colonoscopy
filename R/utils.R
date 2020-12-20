@@ -29,7 +29,7 @@ find_pkg_name <- function(nm, env) {
 
   x <- get(nm, env)
 
-  if (inherits(x, "lazy_scope") || is.null(x)) {
+  if (inherits(x, "lazy_scope") || inherits(x, "scoped") || is_null(x)) {
     return(NULL)
   }
 
