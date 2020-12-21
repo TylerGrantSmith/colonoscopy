@@ -18,7 +18,8 @@ Imports:
 RoxygenNote: 7.1.1
 Suggests: 
     testthat (>= 2.1.0),
-    rstudioapi
+    rstudioapi,
+    covr
 URL: https://github.com/TylerGrantSmith/colonoscopy
 BugReports: https://github.com/TylerGrantSmith/colonoscopy/issues
 License: GPL-3

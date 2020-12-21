@@ -5,12 +5,11 @@
 
 <!-- badges: start -->
 
-[![Travis build
-status](https://travis-ci.org/TylerGrantSmith/colonoscopy.svg?branch=master)](https://travis-ci.org/TylerGrantSmith/colonoscopy)
 [![Codecov test
 coverage](https://codecov.io/gh/TylerGrantSmith/colonoscopy/branch/master/graph/badge.svg)](https://codecov.io/gh/TylerGrantSmith/colonoscopy?branch=master)
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
+[![R-CMD-check](https://github.com/TylerGrantSmith/colonoscopy/workflows/R-CMD-check/badge.svg)](https://github.com/TylerGrantSmith/colonoscopy/actions)
 <!-- badges: end -->
 
 `colonoscopy` provides functions and RStudio addins to easily add or
@@ -40,7 +39,7 @@ aes
 #>     aes <- new_aes(exprs, env = parent.frame())
 #>     rename_aes(aes)
 #> }
-#> <bytecode: 0x00000000132d55f8>
+#> <bytecode: 0x000000000f16d908>
 #> <environment: namespace:ggplot2>
 scope(aes)
 #> function (x, y, ...)
@@ -82,7 +81,7 @@ alpha
 #>     rgb[!is.na(alpha), 4] <- alpha[!is.na(alpha)]
 #>     farver::encode_colour(rgb, rgb[, 4])
 #> }
-#> <bytecode: 0x0000000013834df0>
+#> <bytecode: 0x000000000f7d89d0>
 #> <environment: namespace:scales>
 unscope(alpha)
 #> function (colour, alpha = NA)
