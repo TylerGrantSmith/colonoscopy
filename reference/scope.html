@@ -128,24 +128,25 @@
     <pre class="usage"><span class='fu'>scope</span><span class='op'>(</span><span class='va'>x</span>, envir <span class='op'>=</span> <span class='fu'>caller_env</span><span class='op'>(</span><span class='op'>)</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for default</span>
-<span class='fu'>scope</span><span class='op'>(</span><span class='va'>x</span>, envir <span class='op'>=</span> <span class='fu'>caller_env</span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>scope</span><span class='op'>(</span><span class='va'>x</span>, envir <span class='op'>=</span> <span class='fu'>caller_env</span><span class='op'>(</span><span class='op'>)</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for character</span>
-<span class='fu'>scope</span><span class='op'>(</span><span class='va'>x</span>, envir <span class='op'>=</span> <span class='fu'>caller_env</span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>scope</span><span class='op'>(</span><span class='va'>x</span>, envir <span class='op'>=</span> <span class='fu'>caller_env</span><span class='op'>(</span><span class='op'>)</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for `function`</span>
 <span class='fu'>scope</span><span class='op'>(</span>
   <span class='va'>x</span>,
   envir <span class='op'>=</span> <span class='fu'>get_env</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='op'>%||%</span> <span class='fu'>caller_env</span><span class='op'>(</span><span class='op'>)</span>,
   useSource <span class='op'>=</span> <span class='cn'>TRUE</span>,
-  inPackage <span class='op'>=</span> <span class='cn'>TRUE</span>
+  inPackage <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  <span class='va'>...</span>
 <span class='op'>)</span>
 
 <span class='co'># S3 method for call</span>
-<span class='fu'>scope</span><span class='op'>(</span><span class='va'>x</span>, envir <span class='op'>=</span> <span class='fu'>caller_env</span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>scope</span><span class='op'>(</span><span class='va'>x</span>, envir <span class='op'>=</span> <span class='fu'>caller_env</span><span class='op'>(</span><span class='op'>)</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for quosure</span>
-<span class='fu'>scope</span><span class='op'>(</span><span class='va'>x</span>, envir <span class='op'>=</span> <span class='fu'>quo_get_env</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='op'>%||%</span> <span class='fu'>caller_env</span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span></pre>
+<span class='fu'>scope</span><span class='op'>(</span><span class='va'>x</span>, envir <span class='op'>=</span> <span class='fu'>quo_get_env</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='op'>%||%</span> <span class='fu'>caller_env</span><span class='op'>(</span><span class='op'>)</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
