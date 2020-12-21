@@ -26,7 +26,7 @@ scope <- function(x, envir = caller_env(), ...) {
 #' @rdname scope
 #' @export
 #' @keywords internal
-scope.default <- function(x, envir = caller_env()) {
+scope.default <- function(x, envir = caller_env(), ...) {
   if (!is_environment(envir)) {
     abort("`envir`` must be an environment")
   }
@@ -48,7 +48,7 @@ scope.default <- function(x, envir = caller_env()) {
 #' @rdname scope
 #' @export
 #' @keywords internal
-scope.character <- function(x, envir = caller_env()) {
+scope.character <- function(x, envir = caller_env(), ...) {
   if (!is_environment(envir)) {
     abort("`envir`` must be an environment")
   }
@@ -63,7 +63,7 @@ scope.character <- function(x, envir = caller_env()) {
 scope.function <- function(x,
                            envir = get_env(x) %||% caller_env(),
                            useSource = TRUE,
-                           inPackage = TRUE) {
+                           inPackage = TRUE, ...) {
 
   if (!inPackage) {
     envir = child_env(envir)
@@ -83,13 +83,13 @@ scope.function <- function(x,
 #' @rdname scope
 #' @export
 #' @keywords internal
-scope.call <- function(x, envir = caller_env()) {
+scope.call <- function(x, envir = caller_env(), ...) {
   scope(quo_text(x), envir = envir)
 }
 
 #' @rdname scope
 #' @export
 #' @keywords internal
-scope.quosure <- function(x, envir = quo_get_env(x) %||% caller_env()) {
+scope.quosure <- function(x, envir = quo_get_env(x) %||% caller_env(), ...) {
   scope(quo_text(x), envir = envir)
 }
