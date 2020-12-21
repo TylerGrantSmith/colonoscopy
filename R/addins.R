@@ -33,37 +33,30 @@ get_token_end <- function(context, selection) {
   col + offset
 }
 
-#' @importFrom purrr map_depth
-scope_selection <- function(envir = caller_env()) {
+assert_rstudio <- function() {
   if(!check_rstudio()) {
     abort(paste(
       "Either `rstudioapi` is missing or you are attempting",
       "to run this function from outside RStudio."))
   }
+}
 
+
+#' @importFrom purrr map_depth
+scope_selection <- function(envir = caller_env()) {
+  assert_rstudio()
   context_tracker <- ContextTracker$new()
-
   out <- map_depth(context_tracker$buffer, 2, scope, envir)
-
   if(is_null(out)) return()
-
   context_tracker$replace_in_context(map_depth(out, 2, ~.$text))
 }
 
 #' @importFrom purrr map_depth
 unscope_selection <- function() {
-  if(!check_rstudio()) {
-    abort(paste(
-      "Either `rstudioapi` is missing or you are attempting",
-      "to run this function from outside RStudio."))
-  }
-
+  assert_rstudio()
   context_tracker <- ContextTracker$new()
-
   out <- map_depth(context_tracker$buffer, 2, unscope)
-
   if(is_null(out)) return()
-
   context_tracker$replace_in_context(map_depth(out, 2, ~.$text))
 
 }
