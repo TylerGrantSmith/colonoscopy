@@ -11,20 +11,21 @@
 \usage{
 scope(x, envir = caller_env(), ...)
 
-\method{scope}{default}(x, envir = caller_env())
+\method{scope}{default}(x, envir = caller_env(), ...)
 
-\method{scope}{character}(x, envir = caller_env())
+\method{scope}{character}(x, envir = caller_env(), ...)
 
 \method{scope}{`function`}(
   x,
   envir = get_env(x) \%||\% caller_env(),
   useSource = TRUE,
-  inPackage = TRUE
+  inPackage = TRUE,
+  ...
 )
 
-\method{scope}{call}(x, envir = caller_env())
+\method{scope}{call}(x, envir = caller_env(), ...)
 
-\method{scope}{quosure}(x, envir = quo_get_env(x) \%||\% caller_env())
+\method{scope}{quosure}(x, envir = quo_get_env(x) \%||\% caller_env(), ...)
 }
 \arguments{
 \item{x}{A character vector of parseable code, a call, a quosure, or a function.}
