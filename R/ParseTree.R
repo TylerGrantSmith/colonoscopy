@@ -64,6 +64,8 @@ ParseTree <- R6::R6Class(
       if (is_null(text))
         abort("ParseData cannot be initialized with NULL.")
 
+      text <- paste0(text, collapse = '\n')
+
       private$.text  <- text
 
       private$header <- extract_header(text)
