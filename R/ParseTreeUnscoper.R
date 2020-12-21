@@ -22,6 +22,7 @@ ParseTreeUnscoper <- R6::R6Class(
       name_rows <- colon_rows + 1
 
       private$pd[c(package_rows, colon_rows), text := ""]
+      invisible()
     }
   )
 )

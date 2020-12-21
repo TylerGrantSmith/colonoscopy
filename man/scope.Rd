@@ -5,24 +5,35 @@
 \alias{scope.default}
 \alias{scope.character}
 \alias{scope.function}
+\alias{scope.call}
+\alias{scope.quosure}
 \title{Make package dependencies explicit}
 \usage{
 scope(x, envir = caller_env(), ...)
 
-\method{scope}{default}(x, envir = caller_env(), ...)
+\method{scope}{default}(x, envir = caller_env())
 
-\method{scope}{character}(x, envir = caller_env(), ...)
+\method{scope}{character}(x, envir = caller_env())
 
-\method{scope}{`function`}(x, envir = get_env(x) \%||\% caller_env(), useSource = TRUE, ...)
+\method{scope}{`function`}(
+  x,
+  envir = get_env(x) \%||\% caller_env(),
+  useSource = TRUE,
+  inPackage = TRUE
+)
+
+\method{scope}{call}(x, envir = caller_env())
+
+\method{scope}{quosure}(x, envir = quo_get_env(x) \%||\% caller_env())
 }
 \arguments{
-\item{x}{A character vector of parseable code or a function.}
+\item{x}{A character vector of parseable code, a call, a quosure, or a function.}
 
 \item{envir}{An environment in which the expression should be evaluated.
 Defaults to the enclosing environment if \code{x} is a function, otherwise the calling environment.}
 }
 \value{
-Returns a [ParseData] object which prints the modified code.
+Returns a [ParseTreeScoper] object which prints the modified code.
 }
 \description{
 Parses the input, and explicitly adds namespace access where appropriate.

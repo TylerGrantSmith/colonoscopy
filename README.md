@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# colonoscopy
+# colonoscopy <img src='man/figures/logo.png' align="right" height="139" />
 
 <!-- badges: start -->
 
@@ -40,9 +40,16 @@ aes
 #>     aes <- new_aes(exprs, env = parent.frame())
 #>     rename_aes(aes)
 #> }
-#> <bytecode: 0x00000000176e8f88>
+#> <bytecode: 0x00000000132d55f8>
 #> <environment: namespace:ggplot2>
 scope(aes)
+#> function (x, y, ...)
+#> {
+#>     exprs <- rlang::enquos(x = x, y = y, ..., .ignore_empty = "all")
+#>     aes <- new_aes(exprs, env = parent.frame())
+#>     rename_aes(aes)
+#> }
+scope(aes, inPackage = FALSE)
 #> function (x, y, ...)
 #> {
 #>     exprs <- rlang::enquos(x = x, y = y, ..., .ignore_empty = "all")
@@ -75,7 +82,7 @@ alpha
 #>     rgb[!is.na(alpha), 4] <- alpha[!is.na(alpha)]
 #>     farver::encode_colour(rgb, rgb[, 4])
 #> }
-#> <bytecode: 0x0000000012cb87b0>
+#> <bytecode: 0x0000000013834df0>
 #> <environment: namespace:scales>
 unscope(alpha)
 #> function (colour, alpha = NA)

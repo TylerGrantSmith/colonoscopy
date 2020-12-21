@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# colonoscopy
+# colonoscopy <img src='man/figures/logo.png' align="right" height="139" />
 
 <!-- badges: start -->
 [![Travis build status](https://travis-ci.org/TylerGrantSmith/colonoscopy.svg?branch=master)](https://travis-ci.org/TylerGrantSmith/colonoscopy)
@@ -38,6 +38,7 @@ library(ggplot2)
 scope("aes")
 aes
 scope(aes)
+scope(aes, inPackage = FALSE)
 ```
 `unscope` will modify expressions or functions by removing `::` and `:::` operators (and the package name).
 

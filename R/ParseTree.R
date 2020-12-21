@@ -11,6 +11,7 @@ ParseTree <- R6::R6Class(
     parse_data_filtered = NULL,
 
     root_id = NULL,
+    visited_ids = NULL,
     cache = list(),
     text_env = NULL,
     .envir = NULL,
@@ -62,6 +63,8 @@ ParseTree <- R6::R6Class(
     initialize = function(text, ...) {
       if (is_null(text))
         abort("ParseData cannot be initialized with NULL.")
+
+      text <- paste0(text, collapse = '\n')
 
       private$.text  <- text
 

@@ -2,9 +2,28 @@ get_obj_env <- function(x, env) {
   environment(get0(x, env))
 }
 
+find_nm_in_imports <- function(nm, ns) {
+  imports <- ns$.__NAMESPACE__.$imports
+  pkg <- unique(names(which(sapply(imports, function(x) any(x == nm)))))
+  if (length(pkg))
+    pkg
+  else
+    NULL
+}
+
 find_pkg_name <- function(nm, env) {
-  enclos <- environment(get(nm, env))
-  enclos$.packageName %||% ""
+  if (isBaseNamespace(env))
+    return("base")
+
+  x <- get0(nm, env)
+
+  if (inherits(x, "lazy_scope") || inherits(x, "scoped") || is_null(x)) {
+    return(NULL)
+  }
+
+  .getNamespaceInfo(environment(x), "spec")[["name"]] %||%
+    find_nm_in_imports(nm, env) %||%
+    tryCatch(ns_env_name(env), error = function(e) "")
 }
 
 is_exported <- function(x, ns) {
@@ -22,13 +41,11 @@ getNamespaceExportsAndLazyData <- function(ns) {
       names(.getNamespaceInfo(ns, "lazydata")))
 }
 
-#' @importFrom rlang with_bindings eval_bare
 with_self_bindings <- function(...) {
   self <- get("self", caller_env())
   with_bindings(..., .env = self$.__enclos_env__$self)
 }
 
-#' @importFrom rlang abort warn
 parse_safely <- function(text, ...) {
   parsed <- with_handlers(
     parse(text = text, ...),
