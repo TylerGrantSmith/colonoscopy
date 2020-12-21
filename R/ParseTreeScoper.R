@@ -40,65 +40,6 @@ ParseTreeScoper$set(
   }
 )
 
-
-# ParseTreeScoper$set(
-#   "private",
-#   "scope_forcond",
-#   function() {
-#     pl <- private$parse_data_filtered
-#     forcond_id <- pl[token == "forcond", id]
-#     browser()
-#
-#     # Lazy bind pre-bound arguments
-#     bound_fml_nms <- pl[, .(token, nm = shift(text, 1L, type = "lag" ))][token == "EQ_FORMALS", nm]
-#     bound_fml_ids <- pl[, .(token, as = shift(id,   1L, type = "lead"))][token == "EQ_FORMALS", as]
-#     fmls <- lapply(bound_fml_ids, `class<-`, "lazy_scope")
-#     names(fmls) <- bound_fml_nms
-#     env_bind_lazy(self$envir, !!!fmls)
-#
-#     # Bind remaining arguments
-#     unbound_fml_nms <- setdiff(pl[token == "SYMBOL_FORMALS", text], bound_fml_nms)
-#     fmls <- rep_named(unbound_fml_nms, list(NULL))
-#     env_bind(self$envir, !!!fmls)
-#
-#     expr_ids <- pl$id[pl$token == "expr"]
-#
-#     for (id in expr_ids) {
-#       private$recursive_scope(id)
-#     }
-#   }
-# )
-
-
-
-# ParseTreeScoper$set(
-#   "private",
-#   "scope_for",
-#   function() {
-#     enclos <- child_env(self$envir)
-#
-#     with_self_bindings(
-#       envir = enclos,
-#
-#       {
-#         private$scope_forcond()
-#         private$scope_body()
-#
-#         el <- as.list(enclos)
-#         scope_el <- which(vapply(el, inherits, FALSE, "scope"))
-#         while(length(scope_el) > 0) {
-#           for(i in scope_el) {
-#             private$recursive_scope(el[[i]])
-#             class(enclos[[names(el)[[i]]]]) <- "scoped"
-#           }
-#           el <- as.list(enclos)
-#           scope_el <- which(vapply(el, inherits, FALSE, "scope"))
-#         }
-#       }
-#     )
-#   }
-# )
-
 ParseTreeScoper$set(
   "private",
   "scope_symbs",
