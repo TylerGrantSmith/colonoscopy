@@ -4,6 +4,9 @@ get_obj_env <- function(x, env) {
 
 find_nm_in_imports <- function(nm, ns) {
   imports <- ns$.__NAMESPACE__.$imports
+
+  if (is_null(imports)) return(NULL)
+
   pkg <- unique(names(which(sapply(imports, function(x) any(x == nm)))))
   if (length(pkg))
     pkg

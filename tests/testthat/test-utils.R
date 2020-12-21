@@ -24,3 +24,7 @@ test_that("extract_header works with all nonspace characters", {
   expect_identical(extract_header("\n{"), "\n")
   expect_identical(extract_header("\n#"), "\n")
 })
+
+test_that("find_nm_in_imports handles non-namespace environments", {
+  expect_null(find_nm_in_imports("x", environment()))
+})
