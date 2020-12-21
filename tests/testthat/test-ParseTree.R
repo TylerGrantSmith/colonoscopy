@@ -10,7 +10,6 @@ test_that(
 test_that(
   "footer and header",
   {
-    browser()
     default_text <- " \n\t \n  1   \n \t\n"
     pt <- ParseTree$new(default_text)
     expect_equal(pt$.__enclos_env__$private$header, " \n\t \n")

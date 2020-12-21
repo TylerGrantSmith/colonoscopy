@@ -5,7 +5,7 @@ ParseTreeScoper <- R6::R6Class(
   public = list(
     initialize = function(..., envir = NULL) {
       super$initialize(...)
-      self$envir <- envir
+      self$envir <- if (isNamespace(envir)) envir else rlang::child_env(envir)
       private$visited_ids <- environment()
       private$recursive_scope(0L)
     }
@@ -31,12 +31,15 @@ ParseTreeScoper$set(
 
     if (any(private$parse_data_filtered$token == "FUNCTION")) {
       private$scope_function()
+      # } else if (any(private$parse_data_filtered$token == "FOR")) {
+      #   private$scope_for()
     } else {
       private$scope_exprs()
     }
     assign(root_sym, TRUE, envir = private$visited_ids)
   }
 )
+
 ParseTreeScoper$set(
   "private",
   "scope_symbs",
@@ -57,13 +60,13 @@ ParseTreeScoper$set(
   function() {
     skip_ids <- integer()
     # browser()
-    if (any(private$parse_data_filtered$token %in% c("NS_GET", "NS_GET_INT", "'$'",  "RIGHT_ASSIGN", "LEFT_ASSIGN","EQ_ASSIGN"))) {
+    if (any(private$parse_data_filtered$token %in% c("NS_GET", "NS_GET_INT", "'$'",  "RIGHT_ASSIGN", "LEFT_ASSIGN","EQ_ASSIGN", "IN"))) {
       for (.id in self$ids) {
         if (private$parse_data_filtered[,.(id, pt = shift(token, 1L, '', "lag"))][id == .id, pt] %in% c("NS_GET", "NS_GET_INT", "'$'","RIGHT_ASSIGN")) {
           skip_ids <- append(skip_ids, .id)
           next
         }
-        if (private$parse_data_filtered[,.(id, pt = shift(token, 1L, '', "lead"))][id == .id, pt] %in% c("LEFT_ASSIGN", "EQ_ASSIGN")) {
+        if (private$parse_data_filtered[,.(id, pt = shift(token, 1L, '', "lead"))][id == .id, pt] %in% c("LEFT_ASSIGN", "EQ_ASSIGN", "IN")) {
           private$scope_assignment()
           private$recursive_scope(.id)
           skip_ids <- append(skip_ids, .id)
@@ -105,7 +108,8 @@ ParseTreeScoper$set(
   function() {
     assign_filter <- private$parse_data_filtered$token %in% c("LEFT_ASSIGN",
                                                               "RIGHT_ASSIGN",
-                                                              "EQ_ASSIGN")
+                                                              "EQ_ASSIGN",
+                                                              "IN")
     if (!any(assign_filter)) {
       return()
     }
@@ -114,7 +118,12 @@ ParseTreeScoper$set(
     is_double_arrow <- private$parse_data_filtered$text[assign_rows] %in% c("<<-", "->>")
     assigned_rows <- assign_rows + offsets
     assigned_ids <- private$parse_data_filtered$id[assigned_rows]
-    assigned_pds <- private$cache[assigned_ids + 1]
+    # assigned_pds <- private$cache[assigned_ids + 1]
+    assigned_pds <- lapply(assigned_ids,
+                           function(x)
+                             private$cache[[assigned_ids + 1]] %||%
+                             private$parse_data_filtered[id == x]
+    )
 
     unassigned_rows <- assign_rows - offsets
     unassigned_ids <- private$parse_data_filtered$id[unassigned_rows]
@@ -123,7 +132,6 @@ ParseTreeScoper$set(
     assign_symbol <- function (pd, id, is_double_arrow) {
       if (identical(pd$token, "SYMBOL")) {
         nm <- pd$text[[1]]
-
         # Hacky non-accurate workaround for double arrow assignment
         if (is_double_arrow) {
           env <- env_parent(self$envir)

@@ -80,3 +80,10 @@ test_that("scope tracks assignments", {
           rlang::child_env(rlang::ns_env("colonoscopy")))$text,
     "scope <- colonoscopy::scope\nscope")
 })
+
+test_that("scope handles `for` loops (#2)", {
+  expect_identical(
+    scope("scope; for (scope in scope) { scope }; scope")$text,
+    "colonoscopy::scope; for (scope in colonoscopy::scope) { scope }; scope"
+  )
+})
