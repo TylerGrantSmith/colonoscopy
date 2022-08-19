@@ -87,3 +87,10 @@ test_that("scope handles `for` loops (#2)", {
     "colonoscopy::scope; for (scope in colonoscopy::scope) { scope }; scope"
   )
 })
+
+test_that("scope handles `list`", {
+  expect_identical(
+    scope("list")$text,
+    "list")
+})
+
