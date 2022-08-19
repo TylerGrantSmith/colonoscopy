@@ -228,7 +228,8 @@ ParseTreeScoper$set(
       return(x)
     }
 
-    if (identical(where_env, private$.envir_initial)) {
+    if (identical(where_env, private$.envir_initial) |
+        identical(where_env, baseenv())) {
       return(x)
     }
 
@@ -242,9 +243,9 @@ ParseTreeScoper$set(
       }
 
       return(x)
+    } else if (pkg_name == "base") {
+      return(x)
     }
-
-    if (pkg_name == "base") { return(x) }
 
     if (is_exported(nm, pkg_name)) {
       paste0(pkg_name, "::", nm)
